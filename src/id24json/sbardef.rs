@@ -1,6 +1,7 @@
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct NumberFont {
     name: String,
+    #[serde(rename = "type")]
     numberfont_type: NumberFontType,
     stem: String
 }
@@ -17,8 +18,8 @@ enum NumberFontType {
 pub struct StatusBar {
     height: u16,
     fullscreenrender: bool,
-    fillflat: String,
-    children: Vec<SBarElem>
+    fillflat: Option<String>, // spec says that this can't be null, but it is in LoR :/
+    children: Option<Vec<SBarElem>>
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
@@ -47,8 +48,8 @@ type FaceBG = Canvas;
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct Canvas {
-    x: u16,
-    y: u16,
+    x: i16,
+    y: i16,
     alignment: Alignment,
     conditions: Option<Vec<Condition>>,
     children: Option<Vec<SBarElem>>
@@ -56,11 +57,11 @@ struct Canvas {
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct Graphic {
-    x: u16,
-    y: u16,
+    x: i16,
+    y: i16,
     alignment: Alignment,
-    tranmap: String,
-    translation: String,
+    tranmap: Option<String>,
+    translation: Option<String>,
     conditions: Option<Vec<Condition>>,
     children: Option<Vec<SBarElem>>,
     patch: String
@@ -68,11 +69,11 @@ struct Graphic {
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct Animation {
-    x: u16,
-    y: u16,
+    x: i16,
+    y: i16,
     alignment: Alignment,
-    tranmap: String,
-    translation: String,
+    tranmap: Option<String>,
+    translation: Option<String>,
     conditions: Option<Vec<Condition>>,
     children: Option<Vec<SBarElem>>,
     frames: Vec<Frame>
@@ -88,11 +89,11 @@ type Percent = Number;
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct Number {
-    x: u16,
-    y: u16,
+    x: i16,
+    y: i16,
     alignment: Alignment,
-    tranmap: String,
-    translation: String,
+    tranmap: Option<String>,
+    translation: Option<String>,
     conditions: Option<Vec<Condition>>,
     children: Option<Vec<SBarElem>>,
     font: String,
@@ -122,7 +123,7 @@ struct Condition {
     param: u8
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
     WeaponOwned           = 0, // Whether the weapon defined by param is owned

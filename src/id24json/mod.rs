@@ -28,6 +28,7 @@ pub enum ID24JsonData {
     DEMOLOOP {
         entries: Vec<demoloop::Entry>
     },
+    #[serde(rename = "statusbar")]
     SBARDEF {
         numberfonts: Vec<sbardef::NumberFont>,
         statusbars: Vec<sbardef::StatusBar>
