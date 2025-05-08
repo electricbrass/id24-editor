@@ -58,6 +58,7 @@ impl MyApp {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    // TODO: add some real error handling instead of expects
                     if ui.button("Open").clicked() {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("JSON", &["json"])
@@ -66,6 +67,15 @@ impl MyApp {
                                 .expect("file should open read only");
                             self.json = serde_json::from_reader(file).expect("file should be valid id24 json");
                             println!("json: {:?}", self.json);
+                        }
+                    }
+                    if ui.button("Save As").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("JSON", &["json"])
+                            .save_file() {
+                            let file = std::fs::File::create(path)
+                                .expect("file should open write only");
+                            serde_json::to_writer_pretty(file, &self.json).expect("json should have been written i hope");
                         }
                     }
                     if ui.button("Quit").clicked() {
