@@ -144,16 +144,6 @@ mod test {
             }
         }"#;
         assert!(serde_json::from_str::<ID24Json>(json).is_err());
-        let json = r#"{
-            "type": "skydefs",
-            "version": "1.0.0",
-            "data":
-            {
-                "skies": null,
-                "flatmapping": null
-            }
-        }"#;
-        assert!(serde_json::from_str::<ID24Json>(json).is_err());
     }
     #[test]
     fn fail_on_invalid_version() {

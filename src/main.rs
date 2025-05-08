@@ -9,6 +9,8 @@ use std::fmt::Display;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 
+// TODO: before making too much gui progress, decide if egui is the right option
+// iced or fltk-rs might be a better option for a retained-mode gui
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
@@ -142,6 +144,7 @@ impl eframe::App for MyApp {
                 ui.selectable_value(&mut self.current_editor, LumpType::Finale, "Finale");
             });
         });
+        // TODO: move this and the central panel inside the match so that they're not separately checking for skydefs
         egui::SidePanel::right("right panel").min_width(75.0).show(ctx, |ui| {
             // TODO: make it so that the lists dont move and resize as elements are added and removed, we do still want them resizable by users
             if let ID24JsonData::SKYDEFS { skies, flatmapping } = &mut self.json.data {
@@ -161,6 +164,7 @@ impl eframe::App for MyApp {
             }
         });
 
+        // TODO: split match arms into separate functions
         egui::CentralPanel::default().show(ctx, |ui| {
             // TODO: don't hard code everything at the top level to be skydefs
             match &mut self.json.data {

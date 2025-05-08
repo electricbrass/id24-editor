@@ -19,7 +19,7 @@ pub struct StatusBar {
     height: u16,
     fullscreenrender: bool,
     fillflat: Option<String>, // spec says that this can't be null, but it is in LoR :/
-    children: Option<Vec<SBarElem>>
+    children: Option<Vec<SBarElem>> // other children arrays can be null according to spec, but not this one...of course it is in LoR
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
@@ -213,5 +213,79 @@ impl Alignment {
         };
 
         horizontal_bits | vertical_bits
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::*;
+    #[test]
+    fn read_sbardef() {
+        let json = r#"{
+            "type": "statusbar",
+            "version": "1.0.0",
+            "metadata": null,
+            "data":
+            {
+                "numberfonts":
+                [
+                    {
+                        "name": "BigRed",
+                        "type": 0,
+                        "stem": "STT"
+                    },
+                    {
+                        "name": "SmallGrey",
+                        "type": 1,
+                        "stem": "STG"
+                    },
+                    {
+                        "name": "SmallYellow",
+                        "type": 2,
+                        "stem": "STYS"
+                    }
+                ],
+                "statusbars":
+                [
+                    {
+                        "height": 32,
+                        "fullscreenrender": false,
+                        "fillflat": null,
+                        "children": null
+                    }
+                ]
+            }
+        }"#;
+        let data: ID24Json = serde_json::from_str(json).unwrap();
+        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
+        assert_eq!(data.data, ID24JsonData::SBARDEF {
+            numberfonts: vec![
+                NumberFont {
+                    name: "BigRed".to_owned(),
+                    numberfont_type: NumberFontType::MonoSpacedZero,
+                    stem: "STT".to_owned()
+                },
+                NumberFont {
+                    name: "SmallGrey".to_owned(),
+                    numberfont_type: NumberFontType::MonoSpaceWidest,
+                    stem: "STG".to_owned()
+                },
+                NumberFont {
+                    name: "SmallYellow".to_owned(),
+                    numberfont_type: NumberFontType::Proportional,
+                    stem: "STYS".to_owned()
+                },
+            ],
+            statusbars: vec![
+                StatusBar {
+                    height: 32,
+                    fullscreenrender: false,
+                    fillflat: None,
+                    children: None
+                }
+            ]
+        });
+        // TODO: add tests for all the children element types, putting them all into this one would be huge
     }
 }
