@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide the console window on Windows in release
 
-mod skydefs;
+mod id24json;
 
-use std::fmt::{Display, Formatter};
+use id24json::{ID24Json, ID24JsonData};
+use id24json::skydefs::{FlatMapping, Sky, SkyType};
+
+use std::fmt::Display;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 
@@ -19,152 +22,6 @@ fn main() -> eframe::Result {
             Ok(Box::<MyApp>::default())
         }),
     )
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct Fire {
-    updatetime: f32,
-    palette: Vec<u8>
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct ForegroundTex {
-    name: String,
-    mid: u32,
-    scrollx: f32,
-    scrolly: f32,
-    scalex: f32,
-    scaley: f32,
-}
-
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Clone, Copy, Debug)]
-#[repr(u8)]
-enum SkyType {
-    Standard = 0,
-    Fire = 1,
-    WithForeground = 2
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct Sky {
-    #[serde(rename = "type")]
-    sky_type: SkyType,
-    name: String,
-    mid: u32,
-    scrollx: f32,
-    scrolly: f32,
-    scalex: f32,
-    scaley: f32,
-    fire: Option<Fire>,
-    foregroundtex: Option<ForegroundTex>
-}
-
-impl Default for Sky {
-    fn default() -> Self {
-        Self {
-            sky_type: SkyType::Standard,
-            name: "SKY1".to_owned(),
-            mid: 100,
-            scrollx: 0.0,
-            scrolly: 0.0,
-            scalex: 1.0,
-            scaley: 1.0,
-            fire: None,
-            foregroundtex: None
-        }
-    }
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct FlatMapping {
-    flat: String,
-    sky: String
-}
-
-impl Default for FlatMapping {
-    fn default() -> Self {
-        Self {
-            flat: "F_SKY1".to_owned(),
-            sky: "SKY1".to_owned()
-        }
-    }
-}
-
-impl Display for FlatMapping {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.flat.clone())
-    }
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(tag = "type", content = "data", rename_all = "lowercase")]
-enum ID24JsonData {
-    GAMECONF,
-    DEMOLOOP,
-    SBARDEF,
-    SKYDEFS {
-        skies: Option<Vec<Sky>>,
-        flatmapping: Option<Vec<FlatMapping>>
-    },
-    TRAKINFO,
-    Interlevel,
-    Finale
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct ID24JsonMetaData {}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct ID24Json {
-    version: ID24JsonVersion,
-    metadata: ID24JsonMetaData,
-    #[serde(flatten)]
-    data: ID24JsonData,
-}
-
-#[derive(Debug)]
-struct ID24JsonVersion {
-    major: u8,
-    minor: u8,
-    revision: u8,
-}
-
-impl serde::Serialize for ID24JsonVersion {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        serializer.serialize_str(format!("{}.{}.{}", self.major, self.minor, self.revision).as_ref())
-    }
-}
-
-impl<'a> serde::Deserialize<'a> for ID24JsonVersion {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'a> {
-        let s = String::deserialize(deserializer)?;
-        let parts: Vec<&str> = s.split('.').collect();
-        if parts.len() != 3 {
-            return Err(serde::de::Error::custom("Expected format 'major.minor.revision'"));
-        }
-
-        let major = parts[0].parse::<u8>()
-            .map_err(|_| serde::de::Error::custom("Invalid major version"))?;
-        let minor = parts[1].parse::<u8>()
-            .map_err(|_| serde::de::Error::custom("Invalid minor version"))?;
-        let revision = parts[2].parse::<u8>()
-            .map_err(|_| serde::de::Error::custom("Invalid revision version"))?;
-
-        Ok(ID24JsonVersion { major, minor, revision })
-    }
-}
-
-impl Default for ID24Json {
-    fn default() -> Self {
-        Self {
-            version: ID24JsonVersion { major: 1, minor: 0, revision: 0 },
-            metadata: ID24JsonMetaData {},
-            data: ID24JsonData::SKYDEFS {
-                skies: None,
-                flatmapping: None
-            }
-        }
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -220,46 +77,42 @@ impl MyApp {
     }
 }
 
-impl Display for Sky {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name.clone())
-    }
-}
-
 fn list<T: Default + Display>(ui: &mut egui::Ui, heading: &str, list: &mut Vec<T>, list_index: &mut Option<usize>) {
-    ui.horizontal(|ui| {
+    ui.push_id(heading, |ui| {  // Add unique ID scope
         ui.heading(heading);
-        if ui.button("➕").clicked() {
-            list.push(T::default());
-            *list_index = Some(list.len() - 1);
-        }
-        if ui.button("❌").clicked() {
-            if let Some(index) = list_index {
-                list.remove(*index);
-                *list_index = None;
+        ui.horizontal(|ui| {
+            if ui.button("➕").clicked() {
+                list.push(T::default());
+                *list_index = Some(list.len() - 1);
             }
-        }
-    });
-
-    TableBuilder::new(ui)
-        .column(Column::auto())  // For the item name
-        .header(20.0, |mut header| {
-            header.col(|ui| {
-                ui.heading("Items");
-            });
-        })
-        .body(|mut body| {
-            for (index, item) in list.iter().enumerate() {
-                body.row(20.0, |mut row| {
-                    row.col(|ui| {
-                        let is_selected = *list_index == Some(index);
-                        if ui.selectable_label(is_selected, item.to_string()).clicked() {
-                            *list_index = Some(index);
-                        }
-                    });
-                });
+            if ui.button("❌").clicked() {
+                if let Some(index) = list_index {
+                    list.remove(*index);
+                    *list_index = None;
+                }
             }
         });
+
+        TableBuilder::new(ui)
+            .column(Column::auto())  // For the item name
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.heading("Items");
+                });
+            })
+            .body(|mut body| {
+                for (index, item) in list.iter().enumerate() {
+                    body.row(20.0, |mut row| {
+                        row.col(|ui| {
+                            let is_selected = *list_index == Some(index);
+                            if ui.selectable_label(is_selected, item.to_string()).clicked() {
+                                *list_index = Some(index);
+                            }
+                        });
+                    });
+                }
+            });
+    });
 }
 
 impl eframe::App for MyApp {
@@ -276,7 +129,7 @@ impl eframe::App for MyApp {
                 ui.selectable_value(&mut self.current_editor, LumpType::Finale, "Finale");
             });
         });
-        egui::SidePanel::right("right panel").min_width(100.0).show(ctx, |ui| {
+        egui::SidePanel::right("right panel").min_width(75.0).show(ctx, |ui| {
             if let ID24JsonData::SKYDEFS { skies, flatmapping } = &mut self.json.data {
                 if skies.is_none() {
                     *skies = Some(Vec::new());
