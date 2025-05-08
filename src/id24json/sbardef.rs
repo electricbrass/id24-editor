@@ -49,7 +49,7 @@ type FaceBG = Canvas;
 struct Canvas {
     x: u16,
     y: u16,
-    alignment: u32, // TODO: find out width of the bitfield
+    alignment: Alignment,
     conditions: Option<Vec<Condition>>,
     children: Option<Vec<SBarElem>>
 }
@@ -58,7 +58,7 @@ struct Canvas {
 struct Graphic {
     x: u16,
     y: u16,
-    alignment: u32, // TODO: find out width of the bitfield
+    alignment: Alignment,
     tranmap: String,
     translation: String,
     conditions: Option<Vec<Condition>>,
@@ -70,7 +70,7 @@ struct Graphic {
 struct Animation {
     x: u16,
     y: u16,
-    alignment: u32, // TODO: find out width of the bitfield
+    alignment: Alignment,
     tranmap: String,
     translation: String,
     conditions: Option<Vec<Condition>>,
@@ -90,7 +90,7 @@ type Percent = Number;
 struct Number {
     x: u16,
     y: u16,
-    alignment: u32, // TODO: find out width of the bitfield
+    alignment: Alignment,
     tranmap: String,
     translation: String,
     conditions: Option<Vec<Condition>>,
@@ -144,4 +144,73 @@ enum ConditionType {
     GameModeEqual         = 16, // Whether the game mode is equal to the mode defined by param
     GameModeNotEqual      = 17, // Whether the game mode is not equal to the mode defined by param
     HudModeEqual          = 18 // Whether the hud mode is equal to the mode defined by param
+}
+
+#[derive(PartialEq, Debug)]
+struct Alignment {
+    horizontal: HoriAlign,
+    vertical: VertAlign
+}
+
+#[derive(PartialEq, Debug)]
+enum VertAlign {
+    Top,
+    Center,
+    Bottom,
+}
+
+#[derive(PartialEq, Debug)]
+enum HoriAlign {
+    Left,
+    Center,
+    Right,
+}
+
+impl serde::Serialize for Alignment {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'a> serde::Deserialize<'a> for Alignment {
+    fn deserialize<D>(deserializer: D) -> Result<Alignment, D::Error> where D: serde::Deserializer<'a> {
+        let value = u8::deserialize(deserializer)?;
+        Alignment::from_u8(value).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Alignment {
+    fn from_u8(value: u8) -> Result<Self, &'static str> {
+        let horizontal = match value & 0b11 {
+            0b00 => HoriAlign::Left,
+            0b01 => HoriAlign::Center,
+            0b10 => HoriAlign::Right,
+            _ => return Err("Multiple horizontal alignments specified"),
+        };
+        let vertical = match value & 0b1100 {
+            0b0000 => VertAlign::Top,
+            0b0100 => VertAlign::Center,
+            0b1000 => VertAlign::Bottom,
+            _ => return Err("Multiple horizontal alignments specified"),
+        };
+        Ok(Self {
+            horizontal,
+            vertical
+        })
+    }
+
+    fn to_u8(&self) -> u8 {
+        let horizontal_bits = match self.horizontal {
+            HoriAlign::Left   => 0b00,
+            HoriAlign::Center => 0b01,
+            HoriAlign::Right  => 0b10
+        };
+        let vertical_bits = match self.vertical {
+            VertAlign::Top    => 0b0000,
+            VertAlign::Center => 0b0100,
+            VertAlign::Bottom => 0b1000
+        };
+
+        horizontal_bits | vertical_bits
+    }
 }

@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Layer {
     anims: Vec<Anim>,
@@ -16,10 +18,68 @@ struct Anim {
 struct Frame {
     image: String,
     #[serde(rename = "type")]
-    frame_type: u16, // TODO: change this to an enum maybe? ask why it's a bitfield if only one can ever be selected at a time
+    frame_type: FrameType,
     duration: f32,
     maxduration: f32,
 }
+
+impl serde::Serialize for FrameType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        serializer.serialize_u16(self.to_u16())
+    }
+}
+
+impl<'a> serde::Deserialize<'a> for FrameType {
+    fn deserialize<D>(deserializer: D) -> Result<FrameType, D::Error> where D: serde::Deserializer<'a> {
+        let value = u16::deserialize(deserializer)?;
+        FrameType::from_u16(value).map_err(serde::de::Error::custom)
+    }
+}
+
+#[derive(PartialEq, Debug)]
+struct FrameType {
+    random_offset: bool,
+    duration: Duration
+}
+
+#[derive(PartialEq, Debug)]
+enum Duration {
+    None,
+    Infinite,
+    Fixed,
+    Random
+}
+
+impl FrameType {
+    fn from_u16(value: u16) -> Result<Self, &'static str> {
+        let duration = match value & 0b111 {
+            0b000 => Duration::None,
+            0b001 => Duration::Infinite,
+            0b010 => Duration::Fixed,
+            0b100 => Duration::Random,
+            _ => return Err("Multiple durations specified."),
+        };
+        let random_offset = (value & 0b1_0000_0000_0000) != 0;
+
+        Ok(Self {
+            random_offset,
+            duration,
+        })
+    }
+
+    fn to_u16(&self) -> u16 {
+        let duration_bits = match self.duration {
+            Duration::None     => 0b000,
+            Duration::Infinite => 0b001,
+            Duration::Fixed    => 0b010,
+            Duration::Random   => 0b100,
+        };
+        let offset_bit = if self.random_offset { 0b1_0000_0000_0000 } else { 0 };
+
+        duration_bits | offset_bit
+    }
+}
+
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct Condition {
