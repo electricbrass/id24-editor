@@ -5,7 +5,7 @@ pub struct NumberFont {
     stem: String
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum NumberFontType {
     MonoSpacedZero = 0,
@@ -102,7 +102,7 @@ struct Number {
     maxlength: u8
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum NumberType {
     // TODO: maybe make the ammo names clearer

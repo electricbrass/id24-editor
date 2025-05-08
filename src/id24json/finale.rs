@@ -1,4 +1,4 @@
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 pub enum Type {
     ArtScreen = 0,

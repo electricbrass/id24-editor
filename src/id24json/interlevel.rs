@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Layer {
     anims: Vec<Anim>,
@@ -87,7 +85,7 @@ struct Condition {
     param: u8
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
     None             = 0,

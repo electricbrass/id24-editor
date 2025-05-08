@@ -8,14 +8,14 @@ pub struct Entry {
     outrowwipe: OutRowWipe
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum DemoType {
     ArtScreen = 0,
     DemoLump = 1
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum OutRowWipe {
     Immediate = 0,
