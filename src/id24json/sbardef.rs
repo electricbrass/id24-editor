@@ -23,14 +23,23 @@ pub struct StatusBar {
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct SBarElem {
-    // TODO: these can all be left out, so make sure to represent this somehow, spec says can be undefined but does *not* say they can be null
-    canvas: Canvas,
-    graphic: Graphic,
-    animation: Animation,
-    face: Face,
-    facebackground: FaceBG,
-    number: Number,
-    percent: Percent
+    // TODO: spec says all these can be undefined but does *not* say they can be null, currently this works for writing but when reading this will allow null to be accepted
+    // I suppose it's maybe okay if we let bad json be fixed up a bit
+    // Already any extra fields not part of the spec will just be thrown away
+    #[serde(skip_serializing_if = "Option::is_none")]
+    canvas: Option<Canvas>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    graphic: Option<Graphic>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    animation: Option<Animation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    face: Option<Face>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    facebackground: Option<FaceBG>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    number: Option<Number>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    percent: Option<Percent>
 }
 
 type Face = Canvas;
