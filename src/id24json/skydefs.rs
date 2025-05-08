@@ -1,13 +1,13 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct Fire {
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+pub struct Fire {
     updatetime: f32,
     palette: Vec<u8>
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct ForegroundTex {
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+pub struct ForegroundTex {
     name: String,
     mid: u32,
     scrollx: f32,
@@ -24,7 +24,7 @@ pub enum SkyType {
     WithForeground = 2
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Sky {
     #[serde(rename = "type")]
     pub sky_type: SkyType,
@@ -54,10 +54,10 @@ impl Default for Sky {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct FlatMapping {
-    flat: String,
-    sky: String
+    pub flat: String,
+    pub sky: String
 }
 
 impl Default for FlatMapping {

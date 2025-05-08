@@ -3,7 +3,7 @@
 mod id24json;
 
 use id24json::{ID24Json, ID24JsonData};
-use id24json::skydefs::{FlatMapping, Sky, SkyType};
+use id24json::skydefs::{SkyType};
 
 use std::fmt::Display;
 use eframe::egui;
@@ -77,6 +77,7 @@ impl MyApp {
     }
 }
 
+// TODO: name this better
 fn list<T: Default + Display>(ui: &mut egui::Ui, heading: &str, list: &mut Vec<T>, list_index: &mut Option<usize>) {
     ui.push_id(heading, |ui| {  // Add unique ID scope
         ui.heading(heading);
@@ -93,6 +94,7 @@ fn list<T: Default + Display>(ui: &mut egui::Ui, heading: &str, list: &mut Vec<T
             }
         });
 
+        // TODO: figure out if TableBuilder is even worth it here
         TableBuilder::new(ui)
             .column(Column::auto())  // For the item name
             .header(20.0, |mut header| {
@@ -118,6 +120,7 @@ fn list<T: Default + Display>(ui: &mut egui::Ui, heading: &str, list: &mut Vec<T
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.top_menu_bar(ctx);
+        // TODO: maybe use egui_dock for proper tabs?
         egui::TopBottomPanel::top("editor_tabs").show(ctx, |ui| {
             ui.horizontal_top(|ui| {
                 ui.selectable_value(&mut self.current_editor, LumpType::GAMECONF, "GAMECONF");
@@ -130,6 +133,7 @@ impl eframe::App for MyApp {
             });
         });
         egui::SidePanel::right("right panel").min_width(75.0).show(ctx, |ui| {
+            // TODO: make it so that the lists dont move and resize as elements are added and removed, we do still want them resizable by users
             if let ID24JsonData::SKYDEFS { skies, flatmapping } = &mut self.json.data {
                 if skies.is_none() {
                     *skies = Some(Vec::new());
@@ -148,6 +152,7 @@ impl eframe::App for MyApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            // TODO: don't hard code everything at the top level to be skydefs
             match &mut self.json.data {
                 ID24JsonData::SKYDEFS { skies, .. } => {
                     if let Some(skies) = skies.as_mut() {
