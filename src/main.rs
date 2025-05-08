@@ -178,6 +178,8 @@ impl eframe::App for MyApp {
                                         ui.add(text_edit);
 
                                         ui.end_row();
+                                        
+                                        // TODO: display units for all of these
 
                                         ui.label("Mid:");
                                         ui.add(egui::DragValue::new(&mut selected_sky.mid).speed(1));

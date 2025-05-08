@@ -69,6 +69,7 @@ impl Default for FlatMapping {
     }
 }
 
+// TODO: decide if such a basic Display impl is the best way to go for displaying these in lists, might prefer to use a new trait and Display for something else
 impl Display for FlatMapping {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.flat.clone())

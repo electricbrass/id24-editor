@@ -1,21 +1,64 @@
 pub mod skydefs;
+mod gameconf;
+mod demoloop;
+mod interlevel;
+mod finale;
+mod sbardef;
 
 use skydefs::{Sky, FlatMapping};
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 #[serde(tag = "type", content = "data", rename_all = "lowercase")]
 pub enum ID24JsonData {
-    GAMECONF,
-    DEMOLOOP,
-    SBARDEF,
+    GAMECONF {
+        title: Option<String>,
+        author: Option<String>,
+        description: Option<String>,
+        version: Option<String>,
+        iwad: Option<String>,
+        pwads: Option<Vec<String>>,
+        playertranslations: Option<Vec<String>>,
+        wadtranslation: Option<Vec<String>>,
+        executable: Option<gameconf::Executable>,
+        mode: Option<gameconf::Mode>,
+        options: Option<String> // TODO: make an actual type for the options
+    },
+    DEMOLOOP {
+        entries: Vec<demoloop::Entry>
+    },
+    SBARDEF {
+        numberfonts: Vec<sbardef::NumberFont>,
+        statusbars: Vec<sbardef::StatusBar>
+    },
     SKYDEFS {
         skies: Option<Vec<Sky>>,
         flatmapping: Option<Vec<FlatMapping>>
     },
-    TRAKINFO,
-    Interlevel,
-    Finale
+    TRAKINFO, // TODO: split this out for now, but i hope that formalized TRAKINFO ends up using the same root
+    Interlevel {
+        backgroundimage: String,
+        music: String,
+        layers: Option<Vec<interlevel::Layer>>
+    },
+    Finale {
+        #[serde(rename = "type")]
+        finale_type: finale::Type,
+        music: String,
+        background: String,
+        donextmap: bool,
+        bunny: finale::Bunny,
+        castrollcall: finale::CastRollCall
+    }
 }
+
+// TODO: verify the JSON is valid, serde handles most of this but theres a couple extra restrictions from ID24
+// interlevel layers must be null or non-empty, not an empty array
+// sky fire and foregroundtex must be null or non-null depending on type
+// numberfonts and statusbars must not be empty
+// numberfont stem length limits
+// all conditions arrays must be non-empty or null
+// all animation frame arrays must be non-empty
+// ...
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 struct ID24JsonMetaData {}
