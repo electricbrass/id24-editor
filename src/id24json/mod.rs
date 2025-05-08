@@ -62,14 +62,10 @@ pub enum ID24JsonData {
 // all animation frame arrays must be non-empty
 // ...
 
-// TODO: store metadata from loaded json somehow instead of just throwing it away, add comment field to metadata and expose to gui, also write application and timestamp
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct ID24JsonMetaData {}
-
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct ID24Json {
     version: ID24JsonVersion,
-    metadata: ID24JsonMetaData,
+    metadata: Option<serde_json::Value>, // ID24 spec says this can't ever be null but LoR has null in its SBARDEF
     #[serde(flatten)]
     pub data: ID24JsonData,
 }
@@ -110,7 +106,7 @@ impl Default for ID24Json {
     fn default() -> Self {
         Self {
             version: ID24JsonVersion { major: 1, minor: 0, revision: 0 },
-            metadata: ID24JsonMetaData {},
+            metadata: Some(serde_json::json!({ "application": "my cool editor :)" })),
             data: ID24JsonData::SKYDEFS {
                 skies: None,
                 flatmapping: None
