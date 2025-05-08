@@ -21,3 +21,46 @@ pub enum Mode {
     Retail,
     Commercial
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::*;
+    #[test]
+    fn read_gameconf() {
+        let json = r#"{
+            "type": "gameconf",
+            "version": "1.0.0",
+            "metadata": { },
+            "data":
+            {
+                "title": "A Totally Real WAD",
+                "author": "electricbrass",
+                "description": null,
+                "version": "1.0",
+                "iwad": "doom2.wad",
+                "pwadfiles": null,
+                "dehfiles": null,
+                "executable": "doom1.9",
+                "mode": "commercial",
+                "options": null
+            }
+        }"#;
+        let data: ID24Json = serde_json::from_str(json).unwrap();
+        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
+        assert_eq!(data.data, ID24JsonData::GAMECONF {
+            title: Some("A Totally Real WAD".to_owned()),
+            author: Some("electricbrass".to_owned()),
+            description: None,
+            version: Some("1.0".to_owned()),
+            iwad: Some("doom2.wad".to_owned()),
+            pwadfiles: None,
+            dehfiles: None,
+            executable: Some(Executable::Doom1_9),
+            mode: Some(Mode::Commercial),
+            options: None,
+            playertranslations: None,
+            wadtranslation: None
+        });
+    }
+}

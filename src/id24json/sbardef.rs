@@ -23,7 +23,7 @@ pub struct StatusBar {
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 struct SBarElem {
-    // TODO: these can all be left out, so make sure to represent this somehow
+    // TODO: these can all be left out, so make sure to represent this somehow, spec says can be undefined but does *not* say they can be null
     canvas: Canvas,
     graphic: Graphic,
     animation: Animation,
@@ -116,24 +116,23 @@ struct Condition {
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
-    None = 0,
-    // TODO: name the conditions better
-    WeaponOwned = 1,
-    WeaponSelected = 2,
-    WeaponNotSelected = 3,
-    CurrWeaponValidAmmo = 4,
-    MatchesCurrWeaponAmmo = 5,
-    idk6 = 6,
-    idk7 = 7,
-    idk8 = 8,
-    idk9 = 9,
-    idk10 = 10,
-    idk11 = 11,
-    idk12 = 12,
-    idk13 = 13,
-    idk14 = 14,
-    idk15 = 15,
-    idk16 = 16,
-    idk17 = 17,
-    idk18 = 18,
+    WeaponOwned           = 0, // Whether the weapon defined by param is owned
+    WeaponSelected        = 1, // Whether the weapon defined by param is selected
+    WeaponNotSelected     = 2, // Whether the weapon defined by param is not selected
+    WeaponValidAmmo       = 3, // Whether the weapon defined by param has a valid ammo type
+    CurrWeaponValidAmmo   = 4, // Whether the selected weapon has a valid ammo type
+    MatchesCurrWeaponAmmo = 5, // Whether the ammo type defined by param matches the selected weapon’s ammo type
+    AnyWeaponOwned        = 6, // Whether any weapon in a slot defined by param is owned
+    AnyWeaponNotOwned     = 7, // Whether any weapon in a slot defined by param not owned
+    AnyWeaponSelected     = 8, // Whether any weapon in a slot defined by param is selected
+    AnyWeaponNotSelected  = 9, // Whether any weapon in a slot defined by param is not selected
+    ItemOwned             = 10, // Whether the item defined by param is owned
+    ItemNotOwned          = 11, // Whether the item defined by param is not owned
+    GameVersionGreaterEq  = 12, // Whether the current game version is greater than or equal to the feature level defined by param
+    GameVersionLess       = 13, // Whether the current game version is less than the feature level defined by param
+    SessionTypeEqual      = 14, // Whether the session type is equal to the type defined by param
+    SessionTypeNotEqual   = 15, // Whether the session type is not equal to the type defined by param
+    GameModeEqual         = 16, // Whether the game mode is equal to the mode defined by param
+    GameModeNotEqual      = 17, // Whether the game mode is not equal to the mode defined by param
+    HudModeEqual          = 18 // Whether the hud mode is equal to the mode defined by param
 }

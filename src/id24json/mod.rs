@@ -16,9 +16,11 @@ pub enum ID24JsonData {
         description: Option<String>,
         version: Option<String>,
         iwad: Option<String>,
-        pwads: Option<Vec<String>>,
-        playertranslations: Option<Vec<String>>,
-        wadtranslation: Option<Vec<String>>,
+        // TODO: ask for clarification on spec, notes below
+        pwadfiles: Option<Vec<String>>, // spec says its called pwads, official GAMECONFS use pwadfiles
+        dehfiles: Option<Vec<String>>, // not mentioned at all in spec but present in official GAMECONFS
+        playertranslations: Option<Vec<String>>, // spec says it can be null, does *not* say it can be undefined. it is undefined in official GAMECONFS
+        wadtranslation: Option<Vec<String>>, // same as above
         executable: Option<gameconf::Executable>,
         mode: Option<gameconf::Mode>,
         options: Option<String> // TODO: make an actual type for the options
@@ -60,6 +62,7 @@ pub enum ID24JsonData {
 // all animation frame arrays must be non-empty
 // ...
 
+// TODO: store metadata from loaded json somehow instead of just throwing it away, add comment field to metadata and expose to gui, also write application and timestamp
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 struct ID24JsonMetaData {}
 
@@ -118,75 +121,7 @@ impl Default for ID24Json {
 
 #[cfg(test)]
 mod test {
-    use crate::id24json::skydefs::SkyType;
     use super::*;
-    #[test]
-    fn read_simple_skydefs() {
-        let json = r#"{
-            "type": "skydefs",
-            "version": "1.0.0",
-            "metadata": { },
-            "data":
-            {
-                "skies":
-                [
-                    {
-                        "type": 0,
-                        "name": "SKY1",
-                        "mid": 100,
-                        "scrollx": 1,
-                        "scrolly": 2,
-                        "scalex": 3,
-                        "scaley": 4,
-		                "fire": null,
-                        "foregroundtex": null
-                    }
-                ],
-                "flatmapping":
-                [
-                    {
-                        "flat" : "FLAT1",
-                        "sky": "SKY1"
-                    }
-                ]
-            }
-        }"#;
-        let data: ID24Json = serde_json::from_str(json).unwrap();
-        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
-        assert_eq!(data.data, ID24JsonData::SKYDEFS {
-            skies: Some(vec![Sky {
-                sky_type: SkyType::Standard,
-                name: "SKY1".to_owned(),
-                mid: 100,
-                scrollx: 1.0,
-                scrolly: 2.0,
-                scalex: 3.0,
-                scaley: 4.0,
-                fire: None,
-                foregroundtex: None
-            }]),
-            flatmapping: Some(vec![FlatMapping {
-                flat: "FLAT1".to_owned(),
-                sky: "SKY1".to_owned()
-            }])
-        });
-        let json = r#"{
-            "type": "skydefs",
-            "version": "1.0.0",
-            "metadata": { },
-            "data":
-            {
-                "skies": null,
-                "flatmapping": null
-            }
-        }"#;
-        let data: ID24Json = serde_json::from_str(json).unwrap();
-        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
-        assert_eq!(data.data, ID24JsonData::SKYDEFS {
-            skies: None,
-            flatmapping: None
-        });
-    }
     #[test]
     fn fail_on_missing_root_fields() {
         let json = r#"{

@@ -30,13 +30,12 @@ struct Condition {
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
-    None = 0,
-    // TODO: name the conditions, odamex has names for them in its code that can be taken
-    idk1 = 1,
-    idk2 = 2,
-    idk3 = 3,
-    idk4 = 4,
-    idk5 = 5,
-    idk6 = 6,
-    idk7 = 7,
+    None             = 0,
+    CurrMapGreater   = 1, // Current map number is greater than the param value
+    CurrMapEqual     = 2, // Current map number is equal to the param value
+    MapVisited       = 3, // The map number corresponding to the param value has been visited
+    CurrMapNotSecret = 4, // The current map is not a secret map
+    AnySecretVisited = 5, // Any secret map has been visited
+    OnFinishedScreen = 6, // The current screen is the "finished" screen
+    OnEnteringScreen = 7, // The current screen is the “entering” screen
 }

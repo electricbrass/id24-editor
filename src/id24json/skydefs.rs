@@ -81,3 +81,76 @@ impl Display for Sky {
         write!(f, "{}", self.name.clone())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::*;
+    #[test]
+    fn read_simple_skydefs() {
+        let json = r#"{
+            "type": "skydefs",
+            "version": "1.0.0",
+            "metadata": { },
+            "data":
+            {
+                "skies":
+                [
+                    {
+                        "type": 0,
+                        "name": "SKY1",
+                        "mid": 100,
+                        "scrollx": 1,
+                        "scrolly": 2,
+                        "scalex": 3,
+                        "scaley": 4,
+		                "fire": null,
+                        "foregroundtex": null
+                    }
+                ],
+                "flatmapping":
+                [
+                    {
+                        "flat" : "FLAT1",
+                        "sky": "SKY1"
+                    }
+                ]
+            }
+        }"#;
+        let data: ID24Json = serde_json::from_str(json).unwrap();
+        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
+        assert_eq!(data.data, ID24JsonData::SKYDEFS {
+            skies: Some(vec![Sky {
+                sky_type: SkyType::Standard,
+                name: "SKY1".to_owned(),
+                mid: 100,
+                scrollx: 1.0,
+                scrolly: 2.0,
+                scalex: 3.0,
+                scaley: 4.0,
+                fire: None,
+                foregroundtex: None
+            }]),
+            flatmapping: Some(vec![FlatMapping {
+                flat: "FLAT1".to_owned(),
+                sky: "SKY1".to_owned()
+            }])
+        });
+        let json = r#"{
+            "type": "skydefs",
+            "version": "1.0.0",
+            "metadata": { },
+            "data":
+            {
+                "skies": null,
+                "flatmapping": null
+            }
+        }"#;
+        let data: ID24Json = serde_json::from_str(json).unwrap();
+        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
+        assert_eq!(data.data, ID24JsonData::SKYDEFS {
+            skies: None,
+            flatmapping: None
+        });
+    }
+}
