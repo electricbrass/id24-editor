@@ -17,4 +17,4 @@ rfd = "0.15.3"
 git = "https://github.com/pop-os/libcosmic"
 rev = "c8c650c" # change to an actual release version eventually
 default-features = false
-features = ["winit"]
+features = ["winit", "rfd"]

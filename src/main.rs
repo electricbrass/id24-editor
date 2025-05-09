@@ -7,6 +7,7 @@ use id24json::skydefs::{SkyType};
 
 use std::fmt::Display;
 use std::collections::HashMap;
+use cosmic::widget::menu;
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
 use eframe::egui;
@@ -52,7 +53,7 @@ enum MyMenuAction {
     Quit
 }
 
-impl cosmic::widget::menu::Action for MyMenuAction {
+impl menu::Action for MyMenuAction {
     type Message = Message;
 
     fn message(&self) -> Self::Message {
@@ -80,7 +81,9 @@ enum Message {
     Open,
     Save,
     SaveAs,
-    Quit
+    Quit,
+    Error(String),
+    Dummy
 }
 
 impl cosmic::Application for MyCosmicApp {
@@ -117,13 +120,18 @@ impl cosmic::Application for MyCosmicApp {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let button = cosmic::widget::button::standard(&self.counter_text)
-            .on_press(Message::Clicked);
+        match &self.json.data {
+            ID24JsonData::SKYDEFS { skies, flatmapping } => {
+                let button = cosmic::widget::button::standard(&self.counter_text)
+                    .on_press(Message::Clicked);
 
-        cosmic::widget::container(button)
-            .center_x(cosmic::iced::Length::Fill)
-            .center_y(cosmic::iced::Length::Shrink)
-            .into()
+                cosmic::widget::container(button)
+                    .center_x(cosmic::iced::Length::Fill)
+                    .center_y(cosmic::iced::Length::Shrink)
+                    .into()
+            },
+            _ => todo!()
+        }
     }
 
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
@@ -131,6 +139,22 @@ impl cosmic::Application for MyCosmicApp {
             Message::Clicked => {
                 self.counter += 1;
                 self.counter_text = format!("Clicked {} times", self.counter);
+            },
+            Message::Open => {
+                return cosmic::task::future(async {
+                    use cosmic::dialog::file_chooser;
+                    let filter = file_chooser::FileFilter::new("JSON Files").extension("json");
+                    let dialog = file_chooser::open::Dialog::new()
+                        .filter(filter);
+                    // TODO: should i open the file here directly or add another message for that? like in the example
+                    match dialog.open_file().await {
+                        Ok(response) => { println!("selected to open {:?}", response.url()); Message::Dummy },
+                        // TODO: probably make a message that just logs smth to stderr
+                        Err(file_chooser::Error::Cancelled) => Message::Dummy,
+                        // TODO: display this error somehow, is a string the best way to store it?
+                        Err(why) => Message::Error(why.to_string()),
+                    }
+                });
             },
             Message::Quit => std::process::exit(0),
             _ => ()
@@ -140,15 +164,15 @@ impl cosmic::Application for MyCosmicApp {
     }
 
     fn header_start(&self) -> Vec<Element<Self::Message>> {
-        let menu_bar = cosmic::widget::menu::bar(vec![cosmic::widget::menu::Tree::with_children(
-            cosmic::widget::menu::root("File"),
-            cosmic::widget::menu::items(
+        let menu_bar = menu::bar(vec![menu::Tree::with_children(
+            menu::root("File"),
+            menu::items(
                 &self.key_binds,
                 vec![
-                    cosmic::widget::menu::Item::Button("Open", None, MyMenuAction::Open),
-                    cosmic::widget::menu::Item::Button("Save", None, MyMenuAction::Save),
-                    cosmic::widget::menu::Item::Button("Save As", None, MyMenuAction::SaveAs),
-                    cosmic::widget::menu::Item::Button("Quit", None, MyMenuAction::Quit)
+                    menu::Item::Button("Open", None, MyMenuAction::Open),
+                    menu::Item::Button("Save", None, MyMenuAction::Save),
+                    menu::Item::Button("Save As", None, MyMenuAction::SaveAs),
+                    menu::Item::Button("Quit", None, MyMenuAction::Quit)
                 ],
             ),
         )]);
