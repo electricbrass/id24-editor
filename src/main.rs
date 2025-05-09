@@ -6,24 +6,31 @@ use id24json::{ID24Json, ID24JsonData};
 use id24json::skydefs::{SkyType};
 
 use std::fmt::Display;
+use std::collections::HashMap;
+use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
+use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 
+use cosmic::prelude::*;
+
 // TODO: before making too much gui progress, decide if egui is the right option
 // iced or fltk-rs might be a better option for a retained-mode gui
-fn main() -> eframe::Result {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([640.0, 480.0]),
-        ..Default::default()
-    };
-    eframe::run_native(
-        "ID24 JSON Editor",
-        options,
-        Box::new(|cc| {
-            Ok(Box::<MyApp>::default())
-        }),
-    )
+fn main() -> cosmic::iced::Result {
+    // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    // let options = eframe::NativeOptions {
+    //     viewport: egui::ViewportBuilder::default().with_inner_size([640.0, 480.0]),
+    //     ..Default::default()
+    // };
+    // eframe::run_native(
+    //     "ID24 JSON Editor",
+    //     options,
+    //     Box::new(|cc| {
+    //         Ok(Box::<MyApp>::default())
+    //     }),
+    // )
+    let settings = cosmic::app::Settings::default();
+    cosmic::app::run::<MyCosmicApp>(settings, ())
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +42,119 @@ enum LumpType {
     TRAKINFO,
     Interlevel,
     Finale,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum MyMenuAction {
+    Open,
+    Save,
+    SaveAs,
+    Quit
+}
+
+impl cosmic::widget::menu::Action for MyMenuAction {
+    type Message = Message;
+
+    fn message(&self) -> Self::Message {
+        match self {
+            MyMenuAction::Open => Message::Open,
+            MyMenuAction::Save => Message::Save,
+            MyMenuAction::SaveAs => Message::SaveAs,
+            MyMenuAction::Quit => Message::Quit,
+        }
+    }
+}
+
+
+struct MyCosmicApp {
+    core: cosmic::Core,
+    key_binds: HashMap<KeyBind, MyMenuAction>,
+    counter: u32,
+    counter_text: String,
+    json: ID24Json,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Clicked,
+    Open,
+    Save,
+    SaveAs,
+    Quit
+}
+
+impl cosmic::Application for MyCosmicApp {
+    type Executor = cosmic::executor::Default;
+    type Flags = ();
+    type Message = Message;
+    // TODO: make a real app id
+    const APP_ID: &'static str = "placeholder_appid";
+
+    fn core(&self) -> &cosmic::Core {
+        &self.core
+    }
+
+    fn core_mut(&mut self) -> &mut cosmic::Core {
+        &mut self.core
+    }
+
+    fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
+        let mut app = MyCosmicApp {
+            core,
+            key_binds: HashMap::from([
+                // TODO: figure out why keybinds dont work and fix display of Ctrl+Shift+S being cut off
+                (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("o".into()) }, MyMenuAction::Open),
+                (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("s".into()) }, MyMenuAction::Save),
+                (KeyBind { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: Key::Character("s".into()) }, MyMenuAction::SaveAs),
+                (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("q".into()) }, MyMenuAction::Quit),
+            ]),
+            counter: 0,
+            counter_text: "this is a counter".to_owned(),
+            json: ID24Json::default()
+        };
+        let command = app.set_window_title("ID24 JSON Editor".to_owned());
+        (app, command)
+    }
+
+    fn view(&self) -> Element<Self::Message> {
+        let button = cosmic::widget::button::standard(&self.counter_text)
+            .on_press(Message::Clicked);
+
+        cosmic::widget::container(button)
+            .center_x(cosmic::iced::Length::Fill)
+            .center_y(cosmic::iced::Length::Shrink)
+            .into()
+    }
+
+    fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
+        match message {
+            Message::Clicked => {
+                self.counter += 1;
+                self.counter_text = format!("Clicked {} times", self.counter);
+            },
+            Message::Quit => std::process::exit(0),
+            _ => ()
+        }
+
+        Task::none()
+    }
+
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
+        let menu_bar = cosmic::widget::menu::bar(vec![cosmic::widget::menu::Tree::with_children(
+            cosmic::widget::menu::root("File"),
+            cosmic::widget::menu::items(
+                &self.key_binds,
+                vec![
+                    cosmic::widget::menu::Item::Button("Open", None, MyMenuAction::Open),
+                    cosmic::widget::menu::Item::Button("Save", None, MyMenuAction::Save),
+                    cosmic::widget::menu::Item::Button("Save As", None, MyMenuAction::SaveAs),
+                    cosmic::widget::menu::Item::Button("Quit", None, MyMenuAction::Quit)
+                ],
+            ),
+        )]);
+
+        vec![menu_bar.into()]
+    }
 }
 
 struct MyApp {
@@ -182,7 +302,7 @@ impl eframe::App for MyApp {
                                         ui.add(text_edit);
 
                                         ui.end_row();
-                                        
+
                                         // TODO: display units for all of these
 
                                         ui.label("Mid:");
