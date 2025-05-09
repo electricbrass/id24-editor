@@ -176,6 +176,14 @@ impl cosmic::Application for EditorModel {
     fn view(&self) -> Element<Self::Message> {
         match self.nav.active_data() {
             Some(LumpType::GAMECONF) => {
+                if let ID24JsonData::GAMECONF {
+                    title, author, version, description,
+                    iwad, pwadfiles, dehfiles,
+                    executable, mode, options,
+                    playertranslations, wadtranslation
+                } = &self.json.data {
+                    
+                }
                 cosmic::widget::container(cosmic::widget::text::heading("Unimplemented!!"))
                     .center_x(cosmic::iced::Length::Fill)
                     .center_y(cosmic::iced::Length::Shrink)
