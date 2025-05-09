@@ -8,12 +8,15 @@ use id24json::skydefs::{SkyType};
 use std::fmt::Display;
 use std::collections::HashMap;
 use cosmic::widget::{icon, menu, nav_bar};
+use cosmic::widget;
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
+use cosmic::iced::{Alignment, Length};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 
 use cosmic::prelude::*;
+use strum::VariantArray;
 
 // TODO: before making too much gui progress, decide if egui is the right option
 // iced or fltk-rs might be a better option for a retained-mode gui
@@ -76,14 +79,16 @@ struct EditorModel {
     core: cosmic::Core,
     key_binds: HashMap<KeyBind, MyMenuAction>,
     nav: nav_bar::Model,
+    text_content: widget::text_editor::Content,
     counter: u32,
     counter_text: String,
-    json: ID24Json,
+    json: ID24Json
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     Clicked,
+    EditText(widget::text_editor::Action),
     InitJSON(LumpType),
     Open,
     Save,
@@ -106,18 +111,6 @@ impl cosmic::Application for EditorModel {
 
     fn core_mut(&mut self) -> &mut cosmic::Core {
         &mut self.core
-    }
-
-    fn nav_model(&self) -> Option<&nav_bar::Model> {
-        Some(&self.nav)
-    }
-
-    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Message>> {
-        self.nav.activate(id);
-        if let Some(lump) = self.nav.data::<LumpType>(id) {
-            return self.update(Message::InitJSON(lump.clone()));
-        }
-        Task::none()
     }
 
     fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
@@ -165,6 +158,7 @@ impl cosmic::Application for EditorModel {
                 (KeyBind { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: Key::Character("s".into()) }, MyMenuAction::SaveAs),
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("q".into()) }, MyMenuAction::Quit),
             ]),
+            text_content: widget::text_editor::Content::new(),
             counter: 0,
             counter_text: "this is a counter".to_owned(),
             json: ID24Json::default()
@@ -173,44 +167,33 @@ impl cosmic::Application for EditorModel {
         (app, command)
     }
 
-    fn view(&self) -> Element<Self::Message> {
-        match self.nav.active_data() {
-            Some(LumpType::GAMECONF) => {
-                if let ID24JsonData::GAMECONF {
-                    title, author, version, description,
-                    iwad, pwadfiles, dehfiles,
-                    executable, mode, options,
-                    playertranslations, wadtranslation
-                } = &self.json.data {
-                    
-                }
-                cosmic::widget::container(cosmic::widget::text::heading("Unimplemented!!"))
-                    .center_x(cosmic::iced::Length::Fill)
-                    .center_y(cosmic::iced::Length::Shrink)
-                    .into()
-            },
-            Some(LumpType::SKYDEFS) => {
-                let button = cosmic::widget::button::standard(&self.counter_text)
-                    .on_press(Message::Clicked);
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
+        let menu_bar = menu::bar(vec![menu::Tree::with_children(
+            menu::root("File"),
+            menu::items(
+                &self.key_binds,
+                vec![
+                    menu::Item::Button("Open", None, MyMenuAction::Open),
+                    menu::Item::Button("Save", None, MyMenuAction::Save),
+                    menu::Item::Button("Save As", None, MyMenuAction::SaveAs),
+                    menu::Item::Button("Quit", None, MyMenuAction::Quit)
+                ],
+            ),
+        )]);
 
-                cosmic::widget::container(button)
-                    .center_x(cosmic::iced::Length::Fill)
-                    .center_y(cosmic::iced::Length::Shrink)
-                    .into()
-            },
-            None => {
-                cosmic::widget::container(cosmic::widget::text::heading("How did you even get here?"))
-                    .center_x(cosmic::iced::Length::Fill)
-                    .center_y(cosmic::iced::Length::Shrink)
-                    .into()
-            },
-            _ => {
-                cosmic::widget::container(cosmic::widget::text::heading("Unimplemented!!"))
-                    .center_x(cosmic::iced::Length::Fill)
-                    .center_y(cosmic::iced::Length::Shrink)
-                    .into()
-            },
+        vec![menu_bar.into()]
+    }
+
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav)
+    }
+
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Message>> {
+        self.nav.activate(id);
+        if let Some(lump) = self.nav.data::<LumpType>(id) {
+            return self.update(Message::InitJSON(lump.clone()));
         }
+        Task::none()
     }
 
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
@@ -242,6 +225,9 @@ impl cosmic::Application for EditorModel {
                     _ => ()
                 }
             },
+            Message::EditText(action) => {
+                self.text_content.perform(action);
+            }
             Message::Quit => std::process::exit(0),
             _ => ()
         }
@@ -249,23 +235,95 @@ impl cosmic::Application for EditorModel {
         Task::none()
     }
 
-    fn header_start(&self) -> Vec<Element<Self::Message>> {
-        let menu_bar = menu::bar(vec![menu::Tree::with_children(
-            menu::root("File"),
-            menu::items(
-                &self.key_binds,
-                vec![
-                    menu::Item::Button("Open", None, MyMenuAction::Open),
-                    menu::Item::Button("Save", None, MyMenuAction::Save),
-                    menu::Item::Button("Save As", None, MyMenuAction::SaveAs),
-                    menu::Item::Button("Quit", None, MyMenuAction::Quit)
-                ],
-            ),
-        )]);
+    fn view(&self) -> Element<Self::Message> {
+        fn aligned_row<'a, Message: 'a>(
+            label: &'a str,
+            widget: impl Into<Element<'a, Message>>,
+        ) -> widget::Row<'a, Message> {
+            widget::row()
+                .push(widget::text::heading(label))
+                .push(widget::horizontal_space())
+                .push(widget.into())
+                .align_y(Alignment::Center)
+        }
+        match self.nav.active_data() {
+            Some(LumpType::GAMECONF) => {
+                if let ID24JsonData::GAMECONF {
+                    title, author, version,
+                    iwad, pwadfiles, dehfiles,
+                    executable, mode, options,
+                    playertranslations, wadtranslation, ..
+                } = &self.json.data {
+                    let title_input = widget::text_input(
+                        "my cool wad",
+                        title.as_deref().unwrap_or(""))
+                        .on_input(|s| Message::Dummy);
+                    let author_input = widget::text_input(
+                        "electricbrass",
+                        author.as_deref().unwrap_or(""))
+                        .on_input(|s| Message::Dummy);
+                    let version_input = widget::text_input(
+                        "1.0",
+                        version.as_deref().unwrap_or(""))
+                        .on_input(|s| Message::Dummy);
+                    let description_input = widget::text_editor(&self.text_content)
+                        .placeholder("a really awesome set of levels")
+                        .on_action(Message::EditText);
+                    let exe_pick = cosmic::iced::widget::pick_list(
+                        id24json::gameconf::Executable::VARIANTS,
+                        executable.as_ref(),
+                        |e| Message::Dummy
+                    ).placeholder("None");
+                    let mode_pick = cosmic::iced::widget::pick_list(
+                        id24json::gameconf::Mode::VARIANTS,
+                        mode.as_ref(),
+                        |m| Message::Dummy
+                    ).placeholder("None");
 
-        vec![menu_bar.into()]
+                    let list = widget::list_column()
+                        .add(aligned_row("Title:", title_input))
+                        .add(aligned_row("Author:", author_input))
+                        .add(aligned_row("Version:", version_input))
+                        .add(aligned_row("Description:", description_input))
+                        .add(aligned_row("Executable:", exe_pick))
+                        .add(aligned_row("Mode:", mode_pick));
+
+                    return widget::container(list)
+                        .center_x(Length::Fill)
+                        .center_y(Length::Shrink)
+                        .into()
+                }
+                widget::container(widget::text::heading("Unimplemented!!"))
+                    .center_x(Length::Fill)
+                    .center_y(Length::Shrink)
+                    .into()
+            },
+            Some(LumpType::SKYDEFS) => {
+                let button = widget::button::standard(&self.counter_text)
+                    .on_press(Message::Clicked);
+
+                widget::container(button)
+                    .center_x(Length::Fill)
+                    .center_y(Length::Shrink)
+                    .into()
+            },
+            None => {
+                widget::container(widget::text::heading("How did you even get here?"))
+                    .center_x(Length::Fill)
+                    .center_y(Length::Shrink)
+                    .into()
+            },
+            _ => {
+                widget::container(widget::text::heading("Unimplemented!!"))
+                    .center_x(Length::Fill)
+                    .center_y(Length::Shrink)
+                    .into()
+            },
+        }
     }
 }
+
+// TODO: remove all old egui stuff below this comment
 
 struct MyApp {
     json: ID24Json,

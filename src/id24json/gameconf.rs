@@ -1,4 +1,6 @@
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+use std::fmt::Formatter;
+
+#[derive(serde::Serialize, serde::Deserialize, strum_macros::VariantArray, Clone, PartialEq, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Executable {
     #[serde(rename = "doom1.9")]
@@ -14,12 +16,38 @@ pub enum Executable {
     ID24
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+impl std::fmt::Display for Executable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Executable::Doom1_9       => "Vanilla",
+            Executable::LimitRemoving => "Limit Removing",
+            Executable::Bugfixed      => "Bugfixed",
+            Executable::Boom2_02      => "Boom 2.02",
+            Executable::CompLevel9    => "Boom (CL9)",
+            Executable::MBF           => "MBF",
+            Executable::MBF21         => "MBF21",
+            Executable::MBF21EX       => "MBF21 + DSDHacked",
+            Executable::ID24          => "ID24"
+        })
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, strum_macros::VariantArray, Clone, PartialEq, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     Registered,
     Retail,
     Commercial
+}
+
+impl std::fmt::Display for Mode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Mode::Registered => "Registered",
+            Mode::Retail     => "Retail",
+            Mode::Commercial => "Commercial",
+        })
+    }
 }
 
 #[cfg(test)]

@@ -24,6 +24,16 @@ pub enum SkyType {
     WithForeground = 2
 }
 
+impl Display for SkyType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SkyType::Standard        => "Standard",
+            SkyType::Fire            => "Fire",
+            SkyType::WithForeground  => "With Foreground",
+        })
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Sky {
     #[serde(rename = "type")]

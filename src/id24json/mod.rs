@@ -1,11 +1,13 @@
 pub mod skydefs;
-mod gameconf;
+pub mod gameconf;
 mod demoloop;
 mod interlevel;
 mod finale;
 mod sbardef;
 
 use skydefs::{Sky, FlatMapping};
+
+// TODO: add Display impls for all the enum types that need drop downs in the gui
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 #[serde(tag = "type", content = "data", rename_all = "lowercase")]
