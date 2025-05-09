@@ -103,6 +103,32 @@ impl<'a> serde::Deserialize<'a> for ID24JsonVersion {
     }
 }
 
+impl ID24JsonData {
+    pub fn gameconf() -> Self {
+        Self::GAMECONF {
+            title: None,
+            author: None,
+            description: None,
+            version: None,
+            iwad: None,
+            pwadfiles: None,
+            dehfiles: None,
+            playertranslations: None,
+            wadtranslation: None,
+            executable: None,
+            mode: None,
+            options: None
+        }
+    }
+
+    pub fn skydefs() -> Self {
+        Self::SKYDEFS {
+            skies: None,
+            flatmapping: None
+        }
+    }
+}
+
 impl Default for ID24Json {
     fn default() -> Self {
         Self {

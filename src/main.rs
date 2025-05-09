@@ -7,7 +7,7 @@ use id24json::skydefs::{SkyType};
 
 use std::fmt::Display;
 use std::collections::HashMap;
-use cosmic::widget::menu;
+use cosmic::widget::{icon, menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
 use eframe::egui;
@@ -31,18 +31,23 @@ fn main() -> cosmic::iced::Result {
     //     }),
     // )
     let settings = cosmic::app::Settings::default();
-    cosmic::app::run::<MyCosmicApp>(settings, ())
+    cosmic::app::run::<EditorModel>(settings, ())
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum LumpType {
     GAMECONF,
     DEMOLOOP,
     SBARDEF,
     SKYDEFS,
-    TRAKINFO,
     Interlevel,
     Finale,
+    TRAKINFO
+}
+
+#[derive(Debug, PartialEq)]
+enum Page {
+    Settings
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -67,9 +72,10 @@ impl menu::Action for MyMenuAction {
 }
 
 
-struct MyCosmicApp {
+struct EditorModel {
     core: cosmic::Core,
     key_binds: HashMap<KeyBind, MyMenuAction>,
+    nav: nav_bar::Model,
     counter: u32,
     counter_text: String,
     json: ID24Json,
@@ -78,6 +84,7 @@ struct MyCosmicApp {
 #[derive(Debug, Clone)]
 enum Message {
     Clicked,
+    InitJSON(LumpType),
     Open,
     Save,
     SaveAs,
@@ -86,7 +93,7 @@ enum Message {
     Dummy
 }
 
-impl cosmic::Application for MyCosmicApp {
+impl cosmic::Application for EditorModel {
     type Executor = cosmic::executor::Default;
     type Flags = ();
     type Message = Message;
@@ -101,9 +108,56 @@ impl cosmic::Application for MyCosmicApp {
         &mut self.core
     }
 
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav)
+    }
+
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Message>> {
+        self.nav.activate(id);
+        if let Some(lump) = self.nav.data::<LumpType>(id) {
+            return self.update(Message::InitJSON(lump.clone()));
+        }
+        Task::none()
+    }
+
     fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
-        let mut app = MyCosmicApp {
+        let mut nav = nav_bar::Model::default();
+        nav.insert()
+            .text("GAMECONF")
+            .data::<LumpType>(LumpType::GAMECONF);
+
+        nav.insert()
+            .text("DEMOLOOP")
+            .data::<LumpType>(LumpType::DEMOLOOP);
+
+        nav.insert()
+            .text("SBARDEF")
+            .data::<LumpType>(LumpType::SBARDEF);
+
+        nav.insert()
+            .text("SKYDEFS")
+            .data::<LumpType>(LumpType::SKYDEFS)
+            .activate();
+
+        nav.insert()
+            .text("Interlevel")
+            .data::<LumpType>(LumpType::Interlevel);
+
+        nav.insert()
+            .text("Finale")
+            .data::<LumpType>(LumpType::Finale);
+
+        nav.insert()
+            .text("TRAKINFO")
+            .data::<LumpType>(LumpType::TRAKINFO);
+
+        nav.insert()
+            .text("Settings")
+            .data::<Page>(Page::Settings);
+
+        let mut app = EditorModel {
             core,
+            nav,
             key_binds: HashMap::from([
                 // TODO: figure out why keybinds dont work and fix display of Ctrl+Shift+S being cut off
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("o".into()) }, MyMenuAction::Open),
@@ -120,8 +174,14 @@ impl cosmic::Application for MyCosmicApp {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        match &self.json.data {
-            ID24JsonData::SKYDEFS { skies, flatmapping } => {
+        match self.nav.active_data() {
+            Some(LumpType::GAMECONF) => {
+                cosmic::widget::container(cosmic::widget::text::heading("Unimplemented!!"))
+                    .center_x(cosmic::iced::Length::Fill)
+                    .center_y(cosmic::iced::Length::Shrink)
+                    .into()
+            },
+            Some(LumpType::SKYDEFS) => {
                 let button = cosmic::widget::button::standard(&self.counter_text)
                     .on_press(Message::Clicked);
 
@@ -130,7 +190,18 @@ impl cosmic::Application for MyCosmicApp {
                     .center_y(cosmic::iced::Length::Shrink)
                     .into()
             },
-            _ => todo!()
+            None => {
+                cosmic::widget::container(cosmic::widget::text::heading("How did you even get here?"))
+                    .center_x(cosmic::iced::Length::Fill)
+                    .center_y(cosmic::iced::Length::Shrink)
+                    .into()
+            },
+            _ => {
+                cosmic::widget::container(cosmic::widget::text::heading("Unimplemented!!"))
+                    .center_x(cosmic::iced::Length::Fill)
+                    .center_y(cosmic::iced::Length::Shrink)
+                    .into()
+            },
         }
     }
 
@@ -155,6 +226,13 @@ impl cosmic::Application for MyCosmicApp {
                         Err(why) => Message::Error(why.to_string()),
                     }
                 });
+            },
+            Message::InitJSON(lump) => {
+                match lump {
+                    LumpType::GAMECONF => self.json.data = ID24JsonData::gameconf(),
+                    LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
+                    _ => ()
+                }
             },
             Message::Quit => std::process::exit(0),
             _ => ()
