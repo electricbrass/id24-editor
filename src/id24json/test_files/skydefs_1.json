@@ -1,0 +1,174 @@
+{
+  "type": "skydefs",
+  "version": "1.0.0",
+  "metadata": { },
+  "data":
+  {
+    "skies":
+    [
+      {
+        "type": 2,
+        "name": "IKSKY1B",
+        "mid": 100,
+        "scrollx": 2.625,
+        "scrolly": 0,
+        "scalex": 1,
+        "scaley": 1,
+		"fire": null,
+        "foregroundtex": {
+			"name": "IKSKY1",
+			"mid": 100,
+			"scrollx": 5.25,
+			"scrolly": 0,
+			"scalex": 1,
+			"scaley": 1
+		}
+      },
+      {
+        "type": 2,
+        "name": "iksky2b",
+        "mid": 100,
+        "scrollx": 0,
+        "scrolly": 2.635,
+        "scalex": 1,
+        "scaley": 1,
+		"fire": null,
+        "foregroundtex": {
+			"name": "iksky2",
+			"mid": 100,
+			"scrollx": 0,
+			"scrolly": 5.25,
+			"scalex": 1,
+			"scaley": 1
+		}
+      },
+	  {
+        "type": 2,
+        "name": "IKSKY3B",
+        "mid": 100,
+        "scrollx": -2.625,
+        "scrolly": 3,
+        "scalex": 1,
+        "scaley": 1,
+		"fire": null,
+        "foregroundtex": {
+			"name": "IKSKY3",
+			"mid": 100,
+			"scrollx": 4,
+			"scrolly": 2.5,
+			"scalex": 1,
+			"scaley": 1
+		}
+      },
+	  {
+        "type": 2,
+        "name": "IKSKY4B",
+        "mid": 100,
+        "scrollx": 1,
+        "scrolly": -1,
+        "scalex": 0.1,
+        "scaley": 0.1,
+		"fire": null,
+        "foregroundtex": {
+			"name": "IKSKY4",
+			"mid": 100,
+			"scrollx": -1,
+			"scrolly": -1,
+			"scalex": 0.75,
+			"scaley": 0.75
+		}
+      },
+	  {
+        "type": 2,
+        "name": "SKY1",
+        "mid": 100,
+        "scrollx": 0,
+        "scrolly": 0,
+        "scalex": 5,
+        "scaley": 3,
+		"fire": null,
+        "foregroundtex": {
+			"name": "MMSKY 0",
+			"mid": 100,
+			"scrollx": 1,
+			"scrolly": 1,
+			"scalex": 1,
+			"scaley": 1
+		}
+      },
+      {
+        "type": 1,
+        "name": "SKYX5",
+        "mid": 120,
+        "scrollx": 0,
+        "scrolly": 0,
+        "scalex": 1,
+        "scaley": 1,
+        "fire":
+        {
+          "updatetime": 0.05715,
+          "palette":
+          [
+            0, 127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 117, 116, 115, 114, 115, 116, 117, 119, 121, 123, 124, 125, 124, 125, 126, 126, 125, 126, 127, 126, 125
+          ]
+        },
+        "foregroundtex": null
+      },
+      {
+        "type": 1,
+        "name": "SKYE4",
+        "mid": 100,
+        "scrollx": 0,
+        "scrolly": 0,
+        "scalex": 1,
+        "scaley": 1,
+        "fire":
+        {
+          "updatetime": 0.05715,
+          "palette":
+          [
+            0, 47, 191, 187, 235, 234, 232, 167, 166, 165, 223, 221, 220, 219, 217, 216, 215, 214, 213, 164, 163, 162, 161, 160, 231, 230, 229, 228, 227, 226, 225, 224
+          ]
+        },
+        "foregroundtex": null
+      },
+	  {
+        "type": 2,
+        "name": "SKY2",
+        "mid": 128,
+        "scrollx": 0,
+        "scrolly": 0,
+        "scalex": 1,
+        "scaley": 1,
+        "fire": null,
+        "foregroundtex": {
+			"name": "SKYE4",
+			"mid": 60,
+			"scrollx": 0,
+			"scrolly": 0,
+			"scalex": 3,
+			"scaley": 3
+		}
+	  }
+    ],
+    "flatmapping":
+	[
+	  {
+	    "flat": "FLOOR4_1",
+		"sky": "SKY1"
+	  },
+	  {
+	    "flat": "FLOOR3_3",
+		"sky": "SKYX5"
+	  },
+	  {
+		"flat": "RROCK14",
+		"sky": "SKY2"
+	  },
+	  {
+		"flat": "DEM1_5",
+		"sky": "IKSKY4B"
+	  }
+	]
+  }
+}

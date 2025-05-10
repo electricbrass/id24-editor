@@ -37,7 +37,7 @@ pub enum ID24JsonData {
     },
     SKYDEFS {
         skies: Option<Vec<Sky>>,
-        flatmapping: Option<Vec<FlatMapping>>
+        flatmapping: Option<Vec<FlatMapping>>,
     },
     TRAKINFO, // TODO: split this out for now, but i hope that formalized TRAKINFO ends up using the same root
     Interlevel {

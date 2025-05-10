@@ -16,7 +16,7 @@ pub struct ForegroundTex {
     scaley: f32,
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Clone, Copy, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, strum_macros::VariantArray, PartialEq, Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum SkyType {
     Standard = 0,
@@ -39,7 +39,7 @@ pub struct Sky {
     #[serde(rename = "type")]
     pub sky_type: SkyType,
     pub name: String,
-    pub mid: u32,
+    pub mid: u16,
     pub scrollx: f32,
     pub scrolly: f32,
     pub scalex: f32,
@@ -162,5 +162,13 @@ mod test {
             skies: None,
             flatmapping: None
         });
+    }
+    #[test]
+    // TODO: make this a real test and add more test files
+    fn skydefs_test_2() {
+        let data: ID24Json = serde_json::from_str(
+            include_str!("test_files/skydefs_1.json")
+        ).unwrap();
+        assert_eq!(data.version, ID24JsonVersion { major: 1, minor: 0, revision: 0 });
     }
 }

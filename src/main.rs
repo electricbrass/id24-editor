@@ -2,15 +2,14 @@
 
 mod id24json;
 
-use id24json::{ID24Json, ID24JsonData};
-use id24json::skydefs::{SkyType};
+use id24json::{ID24Json, ID24JsonData, skydefs};
 
 use std::fmt::Display;
 use std::collections::HashMap;
-use cosmic::widget::{icon, menu, nav_bar};
 use cosmic::widget;
+use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
-use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
+use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Alignment, Length};
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -37,7 +36,7 @@ fn main() -> cosmic::iced::Result {
     cosmic::app::run::<EditorModel>(settings, ())
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum LumpType {
     GAMECONF,
     DEMOLOOP,
@@ -80,16 +79,27 @@ struct EditorModel {
     key_binds: HashMap<KeyBind, MyMenuAction>,
     nav: nav_bar::Model,
     text_content: widget::text_editor::Content,
-    counter: u32,
-    counter_text: String,
+    skydefs_index: SkydefsIndex,
+    toasts: widget::Toasts<Message>,
     json: ID24Json
+}
+
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+enum SkydefsIndex {
+    #[default]
+    None,
+    Sky(usize),
+    Flatmapping(usize)
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    Clicked,
+    ChangeMid(u16),
+    SelectSky(Option<usize>),
+    SelectFlatmap(Option<usize>),
     EditText(widget::text_editor::Action),
     InitJSON(LumpType),
+    CloseToast(widget::ToastId),
     Open,
     Save,
     SaveAs,
@@ -159,8 +169,8 @@ impl cosmic::Application for EditorModel {
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("q".into()) }, MyMenuAction::Quit),
             ]),
             text_content: widget::text_editor::Content::new(),
-            counter: 0,
-            counter_text: "this is a counter".to_owned(),
+            skydefs_index: SkydefsIndex::default(),
+            toasts: widget::Toasts::new(Message::CloseToast),
             json: ID24Json::default()
         };
         let command = app.set_window_title("ID24 JSON Editor".to_owned());
@@ -191,17 +201,14 @@ impl cosmic::Application for EditorModel {
     fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Message>> {
         self.nav.activate(id);
         if let Some(lump) = self.nav.data::<LumpType>(id) {
-            return self.update(Message::InitJSON(lump.clone()));
+            self.skydefs_index = SkydefsIndex::None;
+            return self.update(Message::InitJSON(*lump));
         }
         Task::none()
     }
 
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
         match message {
-            Message::Clicked => {
-                self.counter += 1;
-                self.counter_text = format!("Clicked {} times", self.counter);
-            },
             Message::Open => {
                 return cosmic::task::future(async {
                     use cosmic::dialog::file_chooser;
@@ -218,16 +225,43 @@ impl cosmic::Application for EditorModel {
                     }
                 });
             },
+            Message::Save => {
+                return self.toasts.push(
+                    widget::toaster::Toast::new("Unimplemented: Please use Save As instead.")
+                ).map(cosmic::Action::App);
+            },
             Message::InitJSON(lump) => {
                 match lump {
                     LumpType::GAMECONF => self.json.data = ID24JsonData::gameconf(),
-                    LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
+                    // LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
+                    LumpType::SKYDEFS => {
+                        // TODO: REMOVE THIS
+                        self.skydefs_index = SkydefsIndex::Sky(0);
+                        self.json = serde_json::from_str(include_str!("id24json/test_files/skydefs_1.json")).unwrap()
+                    },
                     _ => ()
+                }
+            },
+            Message::SelectSky(Some(idx)) => {
+                self.skydefs_index = SkydefsIndex::Sky(idx);
+            },
+            Message::SelectFlatmap(Some(idx)) => {
+                self.skydefs_index = SkydefsIndex::Flatmapping(idx);
+            },
+            Message::SelectSky(None) | Message::SelectFlatmap(None) => {
+                self.skydefs_index = SkydefsIndex::None;
+            },
+            Message::ChangeMid(mid) => {
+                if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
+                    skies[idx].mid = mid;
                 }
             },
             Message::EditText(action) => {
                 self.text_content.perform(action);
-            }
+            },
+            Message::CloseToast(id) => {
+                self.toasts.remove(id);
+            },
             Message::Quit => std::process::exit(0),
             _ => ()
         }
@@ -235,6 +269,9 @@ impl cosmic::Application for EditorModel {
         Task::none()
     }
 
+    #[allow(clippy::too_many_lines)]
+    // not sure how much splitting this would help with organization,
+    // at least right now, so make it stop yelling at me
     fn view(&self) -> Element<Self::Message> {
         fn aligned_row<'a, Message: 'a>(
             label: &'a str,
@@ -246,7 +283,7 @@ impl cosmic::Application for EditorModel {
                 .push(widget.into())
                 .align_y(Alignment::Center)
         }
-        match self.nav.active_data() {
+        let content: Element<Self::Message> = match self.nav.active_data() {
             Some(LumpType::GAMECONF) => {
                 if let ID24JsonData::GAMECONF {
                     title, author, version,
@@ -288,38 +325,137 @@ impl cosmic::Application for EditorModel {
                         .add(aligned_row("Executable:", exe_pick))
                         .add(aligned_row("Mode:", mode_pick));
 
-                    return widget::container(list)
+                    widget::container(list)
                         .center_x(Length::Fill)
                         .center_y(Length::Shrink)
                         .into()
+                } else {
+                    // TODO: figure out a better way to handle this
+                    widget::container(widget::text::heading("You shouldn't be here."))
+                        .center_x(Length::Fill)
+                        .center_y(Length::Fill)
+                        .into()
                 }
-                widget::container(widget::text::heading("Unimplemented!!"))
-                    .center_x(Length::Fill)
-                    .center_y(Length::Shrink)
-                    .into()
             },
             Some(LumpType::SKYDEFS) => {
-                let button = widget::button::standard(&self.counter_text)
-                    .on_press(Message::Clicked);
+                if let ID24JsonData::SKYDEFS { skies, flatmapping } = &self.json.data {
+                    let properties_list =
+                    if let (Some(skies), SkydefsIndex::Sky(idx)) = (skies, self.skydefs_index) {
+                        // TODO: use .get and check that the sky exists
+                        // we shouldn't run into a case where the index is out of bounds but just in case
+                        let id24json::skydefs::Sky {
+                            name,
+                            mid,
+                            scrollx,
+                            scrolly,
+                            scalex,
+                            scaley,
+                            sky_type,
+                            fire,
+                            foregroundtex
+                        } = &skies[idx];
+                        let name_input = widget::text_input("SKY1", name)
+                            .on_input(|s| Message::Dummy);
+                        let mid_spin = widget::spin_button(
+                            (*mid).to_string(), *mid, // TODO: add label here
+                            1, 0, 1024, // TODO: figure out proper values for these
+                            Message::ChangeMid
+                        );
+                        let scrollx_spin = widget::spin_button(
+                            (*scrollx).to_string(), *scrollx,
+                            0.1, 0.0, 100.0,
+                            |_| Message::Dummy
+                        );
+                        let scrolly_spin = widget::spin_button(
+                            (*scrolly).to_string(), *scrolly,
+                            0.1, 0.0, 100.0,
+                            |_| Message::Dummy
+                        );
+                        let scalex_spin = widget::spin_button(
+                            (*scalex).to_string(), *scalex,
+                            0.1, 0.0, 100.0,
+                            |_| Message::Dummy
+                        );
+                        let scaley_spin = widget::spin_button(
+                            (*scaley).to_string(), *scaley,
+                            0.1, 0.0, 100.0,
+                            |_| Message::Dummy
+                        );
+                        let type_pick = cosmic::iced::widget::pick_list(
+                            skydefs::SkyType::VARIANTS,
+                            Some(sky_type),
+                            |s| Message::Dummy
+                        );
+                        widget::list_column()
+                            .add(aligned_row("Name:", name_input))
+                            .add(aligned_row("Mid:", mid_spin))
+                            .add(aligned_row("Scroll X:", scrollx_spin))
+                            .add(aligned_row("Scroll Y:", scrolly_spin))
+                            .add(aligned_row("Scale X:", scalex_spin))
+                            .add(aligned_row("Scale Y:", scaley_spin))
+                            .add(aligned_row("Type:", type_pick))
+                    } else if let (Some(flatmapping), SkydefsIndex::Flatmapping(idx)) = (flatmapping, self.skydefs_index) {
+                        let skydefs::FlatMapping { flat, sky } = &flatmapping[idx];
+                        let flat_input = widget::text_input("F_SKY1", flat)
+                            .on_input(|s| Message::Dummy);
+                        let sky_input = widget::text_input("SKY1", sky)
+                            .on_input(|s| Message::Dummy);
+                        widget::list_column()
+                            .add(aligned_row("Flat:", flat_input))
+                            .add(aligned_row("Sky:", sky_input))
+                    } else {
+                        widget::list_column()
+                    };
+                    let content = widget::row::with_children(vec![
+                        // Left panel
+                        widget::container(properties_list)
+                            .width(Length::FillPortion(2))
+                            .into(),
 
-                widget::container(button)
-                    .center_x(Length::Fill)
-                    .center_y(Length::Shrink)
-                    .into()
-            },
-            None => {
-                widget::container(widget::text::heading("How did you even get here?"))
-                    .center_x(Length::Fill)
-                    .center_y(Length::Shrink)
-                    .into()
+                        widget::divider::vertical::heavy().into(),
+
+                        // Right side with two stacked panels
+                        widget::container(
+                            widget::column::with_children(vec![
+                                // Upper right panel
+                                widget::container(widget::list_column().add(widget::text::body("skies placeholder")))
+                                    .height(Length::FillPortion(1))
+                                    .into(),
+                                widget::divider::horizontal::heavy().into(),
+                                // Lower right panel
+                                widget::container(widget::list_column().add(widget::text::body("flatmapping placeholder")))
+                                    .height(Length::FillPortion(1))
+                                    .into(),
+                            ])
+                        )
+                            .width(Length::FillPortion(1))
+                            .into(),
+                    ])
+                        .padding(10)
+                        .spacing(10);
+
+                    // Wrap in a container for the final element
+                    widget::container(content)
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .into()
+                } else {
+                    // TODO: figure out a better way to handle this
+                    widget::container(widget::text::heading("You shouldn't be here."))
+                        .center_x(Length::Fill)
+                        .center_y(Length::Fill)
+                        .into()
+                }
             },
             _ => {
-                widget::container(widget::text::heading("Unimplemented!!"))
+                widget::container(widget::text::title3("Unimplemented!!"))
                     .center_x(Length::Fill)
-                    .center_y(Length::Shrink)
+                    .center_y(Length::Fill)
                     .into()
             },
-        }
+        };
+
+        widget::toaster(&self.toasts, content)
     }
 }
 
@@ -497,12 +633,8 @@ impl eframe::App for MyApp {
                                         egui::ComboBox::new("sky_type", "")
                                             .selected_text(format!("{:?}", selected_sky.sky_type))
                                             .show_ui(ui, |ui| {
-                                                for kind in [
-                                                    SkyType::Standard,
-                                                    SkyType::Fire,
-                                                    SkyType::WithForeground,
-                                                ] {
-                                                    ui.selectable_value(&mut selected_sky.sky_type, kind, format!("{:?}", kind));
+                                                for kind in skydefs::SkyType::VARIANTS {
+                                                    ui.selectable_value(&mut selected_sky.sky_type, *kind, format!("{:?}", kind));
                                                 }
                                             });
                                         ui.end_row();
