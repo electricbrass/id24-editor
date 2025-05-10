@@ -5,6 +5,7 @@ mod interlevel;
 mod finale;
 mod sbardef;
 
+use serde::{Serialize, Serializer};
 use skydefs::{Sky, FlatMapping};
 
 // TODO: add Display impls for all the enum types that need drop downs in the gui
@@ -22,7 +23,7 @@ pub enum ID24JsonData {
         pwadfiles: Option<Vec<String>>, // spec says its called pwads, official GAMECONFS use pwadfiles
         dehfiles: Option<Vec<String>>, // not mentioned at all in spec but present in official GAMECONFS
         playertranslations: Option<Vec<String>>, // spec says it can be null, does *not* say it can be undefined. it is undefined in official GAMECONFS
-        wadtranslation: Option<Vec<String>>, // same as above
+        wadtranslation: Option<String>, // same as above
         executable: Option<gameconf::Executable>,
         mode: Option<gameconf::Mode>,
         options: Option<String> // TODO: make an actual type for the options
@@ -36,7 +37,9 @@ pub enum ID24JsonData {
         statusbars: Vec<sbardef::StatusBar>
     },
     SKYDEFS {
+        #[serde(serialize_with = "serialize_vec_as_null")]
         skies: Option<Vec<Sky>>,
+        #[serde(serialize_with = "serialize_vec_as_null")]
         flatmapping: Option<Vec<FlatMapping>>,
     },
     TRAKINFO, // TODO: split this out for now, but i hope that formalized TRAKINFO ends up using the same root
@@ -55,6 +58,20 @@ pub enum ID24JsonData {
         castrollcall: finale::CastRollCall
     }
 }
+
+#[allow(clippy::ref_option)]
+// TODO: use this for all of the Option<Vec<T>> where it should only be null or non-empty
+// suppress the warning because we do actually need it this way for serde
+fn serialize_vec_as_null<T: Serialize, S>(vec: &Option<Vec<T>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match vec {
+        Some(v) if !v.is_empty() => vec.serialize(serializer),
+        _ => serializer.serialize_none()
+    }
+}
+
 
 // TODO: verify the JSON is valid, serde handles most of this but theres a couple extra restrictions from ID24
 // interlevel layers must be null or non-empty, not an empty array

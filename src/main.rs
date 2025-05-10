@@ -109,6 +109,8 @@ enum Message {
     ChangeSkyType(skydefs::SkyType),
     NewSky,
     NewFlatmapping,
+    DeleteSky(usize),
+    DeleteFlatmapping(usize),
     SelectSky(Option<usize>),
     SelectFlatmapping(Option<usize>),
     EditText(widget::text_editor::Action),
@@ -118,7 +120,7 @@ enum Message {
     Save,
     SaveAs,
     Quit,
-    Error(String),
+    Error(String), // TODO: add error popups
     Dummy
 }
 
@@ -222,6 +224,8 @@ impl cosmic::Application for EditorModel {
         Task::none()
     }
 
+    #[allow(clippy::too_many_lines)]
+    // TODO: split this up, just dont want it to yell at me for just a bit longer
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
         match message {
             Message::Open => {
@@ -528,6 +532,7 @@ impl cosmic::Application for EditorModel {
                                     |_| Message::Dummy
                                 );
                                 properties_list.push(aligned_row("Animation Speed (seconds):", time_spin));
+                                properties_list.push(aligned_row("Palette:", widget::text::heading("coming soon")));
                             }
                             _ => ()
                         }

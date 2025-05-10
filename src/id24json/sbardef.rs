@@ -1,3 +1,5 @@
+use super::serialize_vec_as_null;
+
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct NumberFont {
     name: String,
@@ -19,6 +21,7 @@ pub struct StatusBar {
     height: u16,
     fullscreenrender: bool,
     fillflat: Option<String>, // spec says that this can't be null, but it is in LoR :/
+    #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>> // other children arrays can be null according to spec, but not this one...of course it is in LoR
 }
 
@@ -51,7 +54,9 @@ struct Canvas {
     x: i16,
     y: i16,
     alignment: Alignment,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     conditions: Option<Vec<Condition>>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>>
 }
 
@@ -62,7 +67,9 @@ struct Graphic {
     alignment: Alignment,
     tranmap: Option<String>,
     translation: Option<String>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     conditions: Option<Vec<Condition>>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>>,
     patch: String
 }
@@ -74,7 +81,9 @@ struct Animation {
     alignment: Alignment,
     tranmap: Option<String>,
     translation: Option<String>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     conditions: Option<Vec<Condition>>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>>,
     frames: Vec<Frame>
 }
@@ -94,7 +103,9 @@ struct Number {
     alignment: Alignment,
     tranmap: Option<String>,
     translation: Option<String>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     conditions: Option<Vec<Condition>>,
+    #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>>,
     font: String,
     #[serde(rename = "type")]

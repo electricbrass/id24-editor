@@ -1,7 +1,7 @@
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Layer {
     anims: Vec<Anim>,
-    conditions: Option<Vec<Condition>>
+    conditions: Option<Vec<Condition>> // TODO: is length 0 allowed?
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
@@ -9,7 +9,7 @@ struct Anim {
     x: u16,
     y: u16,
     frames: Vec<Frame>,
-    conditions: Option<Vec<Condition>>
+    conditions: Option<Vec<Condition>> // TODO: is length 0 allowed?
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
