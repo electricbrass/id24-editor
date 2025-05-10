@@ -1,3 +1,5 @@
+use super::serialize_vec_non_empty;
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Layer {
     anims: Vec<Anim>,
@@ -8,6 +10,7 @@ pub struct Layer {
 struct Anim {
     x: u16,
     y: u16,
+    #[serde(serialize_with = "serialize_vec_non_empty")]
     frames: Vec<Frame>,
     conditions: Option<Vec<Condition>> // TODO: is length 0 allowed?
 }

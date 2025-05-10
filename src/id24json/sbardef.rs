@@ -1,4 +1,4 @@
-use super::serialize_vec_as_null;
+use super::{serialize_vec_as_null, serialize_vec_non_empty};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct NumberFont {
@@ -85,6 +85,7 @@ struct Animation {
     conditions: Option<Vec<Condition>>,
     #[serde(serialize_with = "serialize_vec_as_null")]
     children: Option<Vec<SBarElem>>,
+    #[serde(serialize_with = "serialize_vec_non_empty")]
     frames: Vec<Frame>
 }
 

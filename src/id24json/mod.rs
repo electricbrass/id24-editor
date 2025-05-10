@@ -33,7 +33,9 @@ pub enum ID24JsonData {
     },
     #[serde(rename = "statusbar")]
     SBARDEF {
+        #[serde(serialize_with = "serialize_vec_non_empty")]
         numberfonts: Vec<sbardef::NumberFont>,
+        #[serde(serialize_with = "serialize_vec_non_empty")]
         statusbars: Vec<sbardef::StatusBar>
     },
     SKYDEFS {
@@ -46,6 +48,7 @@ pub enum ID24JsonData {
     Interlevel {
         backgroundimage: String,
         music: String,
+        #[serde(serialize_with = "serialize_vec_as_null")]
         layers: Option<Vec<interlevel::Layer>>
     },
     Finale {
@@ -72,6 +75,16 @@ where
     }
 }
 
+#[allow(clippy::ref_option)]
+fn serialize_vec_non_empty<T: Serialize, S>(vec: &Vec<T>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if vec.is_empty() {
+        return Err(serde::ser::Error::custom("Array must not be empty"));
+    }
+    vec.serialize(serializer)
+}
 
 // TODO: verify the JSON is valid, serde handles most of this but theres a couple extra restrictions from ID24
 // interlevel layers must be null or non-empty, not an empty array
