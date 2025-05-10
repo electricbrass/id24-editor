@@ -255,6 +255,7 @@ impl cosmic::Application for EditorModel {
                 })
             },
             Message::MenuSaveAs => {
+                // TODO: make this change the current file for saving
                 return cosmic::task::future(async {
                     use cosmic::dialog::file_chooser;
                     let filter = file_chooser::FileFilter::new("JSON Files").extension("json");
@@ -319,10 +320,10 @@ impl cosmic::Application for EditorModel {
                         }
                     };
 
-                    if let Err(why) = serde_json::to_writer(&mut file, &self.json) {
+                    if let Err(why) = serde_json::to_writer_pretty(&mut file, &self.json) {
                         return Message::Error(format!("Failed to parse JSON: {why}"));
                     };
-                    
+
                     Message::Dummy
                 };
                 return self.update(message());
