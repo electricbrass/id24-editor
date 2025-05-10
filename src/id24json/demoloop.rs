@@ -1,4 +1,4 @@
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Entry {
     primarylump: String,
     secondarylump: String,
@@ -8,14 +8,14 @@ pub struct Entry {
     outrowwipe: OutRowWipe
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum DemoType {
     ArtScreen = 0,
     DemoLump = 1
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum OutRowWipe {
     Immediate = 0,

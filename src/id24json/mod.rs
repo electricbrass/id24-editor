@@ -10,7 +10,7 @@ use skydefs::{Sky, FlatMapping};
 
 // TODO: add Display impls for all the enum types that need drop downs in the gui
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 #[serde(tag = "type", content = "data", rename_all = "lowercase")]
 pub enum ID24JsonData {
     GAMECONF {
@@ -82,7 +82,7 @@ where
 // all animation frame arrays must be non-empty
 // ...
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct ID24Json {
     version: ID24JsonVersion,
     metadata: Option<serde_json::Value>, // ID24 spec says this can't ever be null but LoR has null in its SBARDEF
@@ -90,7 +90,7 @@ pub struct ID24Json {
     pub data: ID24JsonData,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 struct ID24JsonVersion {
     major: u8,
     minor: u8,

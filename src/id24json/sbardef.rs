@@ -1,6 +1,6 @@
 use super::serialize_vec_as_null;
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct NumberFont {
     name: String,
     #[serde(rename = "type")]
@@ -8,7 +8,7 @@ pub struct NumberFont {
     stem: String
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum NumberFontType {
     MonoSpacedZero = 0,
@@ -16,7 +16,7 @@ enum NumberFontType {
     Proportional = 2
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct StatusBar {
     height: u16,
     fullscreenrender: bool,
@@ -25,7 +25,7 @@ pub struct StatusBar {
     children: Option<Vec<SBarElem>> // other children arrays can be null according to spec, but not this one...of course it is in LoR
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct SBarElem {
     // TODO: spec says all these can be undefined but does *not* say they can be null, currently this works for writing but when reading this will allow null to be accepted
     // I suppose it's maybe okay if we let bad json be fixed up a bit
@@ -49,7 +49,7 @@ struct SBarElem {
 type Face = Canvas;
 type FaceBG = Canvas;
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Canvas {
     x: i16,
     y: i16,
@@ -60,7 +60,7 @@ struct Canvas {
     children: Option<Vec<SBarElem>>
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Graphic {
     x: i16,
     y: i16,
@@ -74,7 +74,7 @@ struct Graphic {
     patch: String
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Animation {
     x: i16,
     y: i16,
@@ -88,7 +88,7 @@ struct Animation {
     frames: Vec<Frame>
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Frame {
     lump: String,
     duration: f32
@@ -96,7 +96,7 @@ struct Frame {
 
 type Percent = Number;
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Number {
     x: i16,
     y: i16,
@@ -114,7 +114,7 @@ struct Number {
     maxlength: u8
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum NumberType {
     // TODO: maybe make the ammo names clearer
@@ -128,13 +128,13 @@ enum NumberType {
     MaxAmmoParamWeapon = 7
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Condition {
     condition: ConditionType,
     param: u8
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
     WeaponOwned           = 0, // Whether the weapon defined by param is owned
@@ -158,20 +158,20 @@ enum ConditionType {
     HudModeEqual          = 18 // Whether the hud mode is equal to the mode defined by param
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 struct Alignment {
     horizontal: HoriAlign,
     vertical: VertAlign
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum VertAlign {
     Top,
     Center,
     Bottom,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum HoriAlign {
     Left,
     Center,

@@ -1,10 +1,10 @@
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Layer {
     anims: Vec<Anim>,
     conditions: Option<Vec<Condition>> // TODO: is length 0 allowed?
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Anim {
     x: u16,
     y: u16,
@@ -12,7 +12,7 @@ struct Anim {
     conditions: Option<Vec<Condition>> // TODO: is length 0 allowed?
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Frame {
     image: String,
     #[serde(rename = "type")]
@@ -34,13 +34,13 @@ impl<'a> serde::Deserialize<'a> for FrameType {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 struct FrameType {
     random_offset: bool,
     duration: Duration
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 enum Duration {
     None,
     Infinite,
@@ -79,13 +79,13 @@ impl FrameType {
 }
 
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 struct Condition {
     condition: ConditionType,
     param: u8
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum ConditionType {
     None             = 0,

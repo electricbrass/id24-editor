@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Fire {
     pub updatetime: f32,
     pub palette: Vec<u8>
@@ -15,7 +15,7 @@ impl Default for Fire {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct ForegroundTex {
     pub name: String,
     pub mid: u16,
@@ -56,7 +56,7 @@ impl Display for SkyType {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Sky {
     #[serde(rename = "type")]
     pub sky_type: SkyType,
@@ -86,7 +86,7 @@ impl Default for Sky {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct FlatMapping {
     pub flat: String,
     pub sky: String
@@ -98,19 +98,6 @@ impl Default for FlatMapping {
             flat: "F_SKY1".to_owned(),
             sky: "SKY1".to_owned()
         }
-    }
-}
-
-// TODO: decide if such a basic Display impl is the best way to go for displaying these in lists, might prefer to use a new trait and Display for something else
-impl Display for FlatMapping {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.flat.clone())
-    }
-}
-
-impl Display for Sky {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name.clone())
     }
 }
 

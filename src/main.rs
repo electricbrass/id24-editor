@@ -4,40 +4,26 @@ mod id24json;
 
 use id24json::{ID24Json, ID24JsonData, skydefs};
 
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use std::collections::HashMap;
 use cosmic::widget;
 use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Alignment, Length};
-use eframe::egui;
-use egui_extras::{Column, TableBuilder};
 
 use cosmic::prelude::*;
-use cosmic::widget::button::ButtonClass;
-use strum::VariantArray;
+use strum::{IntoEnumIterator, VariantArray};
 
-// TODO: before making too much gui progress, decide if egui is the right option
-// iced or fltk-rs might be a better option for a retained-mode gui
+// TODO: figure out how to bundle icons on windows/mac
+// maybe make a pr to libcosmic for that
+
 fn main() -> cosmic::iced::Result {
-    // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-    // let options = eframe::NativeOptions {
-    //     viewport: egui::ViewportBuilder::default().with_inner_size([640.0, 480.0]),
-    //     ..Default::default()
-    // };
-    // eframe::run_native(
-    //     "ID24 JSON Editor",
-    //     options,
-    //     Box::new(|cc| {
-    //         Ok(Box::<MyApp>::default())
-    //     }),
-    // )
     let settings = cosmic::app::Settings::default();
     cosmic::app::run::<EditorModel>(settings, ())
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(strum_macros::EnumIter, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum LumpType {
     GAMECONF,
     DEMOLOOP,
@@ -46,6 +32,34 @@ enum LumpType {
     Interlevel,
     Finale,
     TRAKINFO
+}
+
+impl Display for LumpType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            LumpType::GAMECONF   => "GAMECONF",
+            LumpType::DEMOLOOP   => "DEMOLOOP",
+            LumpType::SBARDEF    => "SBARDEF",
+            LumpType::SKYDEFS    => "SKYDEFS",
+            LumpType::Interlevel => "Interlevel",
+            LumpType::Finale     => "Finale",
+            LumpType::TRAKINFO   => "TRAKINFO",
+        })
+    }
+}
+
+impl From<&ID24JsonData> for LumpType {
+    fn from(data: &ID24JsonData) -> Self {
+        match data {
+            ID24JsonData::GAMECONF   { .. } => LumpType::GAMECONF,
+            ID24JsonData::DEMOLOOP   { .. } => LumpType::DEMOLOOP,
+            ID24JsonData::SBARDEF    { .. } => LumpType::SBARDEF,
+            ID24JsonData::SKYDEFS    { .. } => LumpType::SKYDEFS,
+            ID24JsonData::Interlevel { .. } => LumpType::Interlevel,
+            ID24JsonData::Finale     { .. } => LumpType::Finale,
+            ID24JsonData::TRAKINFO   { .. } => LumpType::TRAKINFO,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -66,10 +80,10 @@ impl menu::Action for MyMenuAction {
 
     fn message(&self) -> Self::Message {
         match self {
-            MyMenuAction::Open => Message::Open,
-            MyMenuAction::Save => Message::Save,
-            MyMenuAction::SaveAs => Message::SaveAs,
-            MyMenuAction::Quit => Message::Quit,
+            MyMenuAction::Open   => Message::MenuOpen,
+            MyMenuAction::Save   => Message::MenuSave,
+            MyMenuAction::SaveAs => Message::MenuSaveAs,
+            MyMenuAction::Quit   => Message::Quit,
         }
     }
 }
@@ -79,9 +93,12 @@ struct EditorModel {
     core: cosmic::Core,
     key_binds: HashMap<KeyBind, MyMenuAction>,
     nav: nav_bar::Model,
+    nav_ids: HashMap<LumpType, nav_bar::Id>,
     text_content: widget::text_editor::Content,
     skydefs_index: SkydefsIndex,
     toasts: widget::Toasts<Message>,
+    error_status: Option<String>,
+    current_file: Option<url::Url>,
     json: ID24Json
 }
 
@@ -105,9 +122,11 @@ enum SkyTexMessage {
 
 #[derive(Debug, Clone)]
 enum Message {
+    // TODO: split each editor into its own module with its own message type
     UpdateSkyTexProp(SkyTexMessage),
     UpdateSkyTexPropFG(SkyTexMessage),
     ChangeSkyType(skydefs::SkyType),
+    ChangeFireSpeed(f32),
     NewSky,
     NewFlatmapping,
     DeleteSky(usize),
@@ -116,12 +135,17 @@ enum Message {
     SelectFlatmapping(Option<usize>),
     EditText(widget::text_editor::Action),
     InitJSON(LumpType),
+    LoadJSON(Box<ID24Json>),
     CloseToast(widget::ToastId),
-    Open,
-    Save,
-    SaveAs,
+    MenuOpen,
+    MenuSave,
+    MenuSaveAs,
+    Open(url::Url),
+    Save(url::Url),
     Quit,
-    Error(String), // TODO: add error popups
+    CloseError,
+    Error(String),
+    ErrorConsole(String),
     Dummy
 }
 
@@ -142,34 +166,12 @@ impl cosmic::Application for EditorModel {
 
     fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
         let mut nav = nav_bar::Model::default();
-        nav.insert()
-            .text("GAMECONF")
-            .data::<LumpType>(LumpType::GAMECONF);
+        let mut nav_ids = HashMap::new();
+        let add_type_to_nav = |lump: LumpType| {
+            nav_ids.insert(lump, nav.insert().text(lump.to_string()).data::<LumpType>(lump).id());
+        };
 
-        nav.insert()
-            .text("DEMOLOOP")
-            .data::<LumpType>(LumpType::DEMOLOOP);
-
-        nav.insert()
-            .text("SBARDEF")
-            .data::<LumpType>(LumpType::SBARDEF);
-
-        nav.insert()
-            .text("SKYDEFS")
-            .data::<LumpType>(LumpType::SKYDEFS)
-            .activate();
-
-        nav.insert()
-            .text("Interlevel")
-            .data::<LumpType>(LumpType::Interlevel);
-
-        nav.insert()
-            .text("Finale")
-            .data::<LumpType>(LumpType::Finale);
-
-        nav.insert()
-            .text("TRAKINFO")
-            .data::<LumpType>(LumpType::TRAKINFO);
+        LumpType::iter().for_each(add_type_to_nav);
 
         nav.insert()
             .divider_above(true)
@@ -179,6 +181,7 @@ impl cosmic::Application for EditorModel {
         let mut app = EditorModel {
             core,
             nav,
+            nav_ids,
             key_binds: HashMap::from([
                 // TODO: figure out why keybinds dont work and fix display of Ctrl+Shift+S being cut off
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("o".into()) }, MyMenuAction::Open),
@@ -189,8 +192,11 @@ impl cosmic::Application for EditorModel {
             text_content: widget::text_editor::Content::new(),
             skydefs_index: SkydefsIndex::default(),
             toasts: widget::Toasts::new(Message::CloseToast),
+            error_status: None,
+            current_file: None,
             json: ID24Json::default()
         };
+        app.set_header_title("ID24 JSON Editor".to_owned());
         let command = app.set_window_title("ID24 JSON Editor".to_owned());
         (app, command)
     }
@@ -229,54 +235,111 @@ impl cosmic::Application for EditorModel {
     // TODO: split this up, just dont want it to yell at me for just a bit longer
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
         match message {
-            Message::Open => {
+            Message::MenuOpen => {
                 return cosmic::task::future(async {
                     use cosmic::dialog::file_chooser;
                     let filter = file_chooser::FileFilter::new("JSON Files").extension("json");
                     let dialog = file_chooser::open::Dialog::new()
                         .filter(filter);
-                    // TODO: should i open the file here directly or add another message for that? like in the example
                     match dialog.open_file().await {
-                        Ok(response) => { println!("selected to open {:?}", response.url()); Message::Dummy },
-                        // TODO: probably make a message that just logs smth to stderr
-                        Err(file_chooser::Error::Cancelled) => Message::Dummy,
-                        // TODO: display this error somehow, is a string the best way to store it?
+                        Ok(response) => Message::Open(response.url().to_owned()),
+                        Err(file_chooser::Error::Cancelled) => Message::ErrorConsole("File dialog closed".to_owned()),
                         Err(why) => Message::Error(why.to_string()),
                     }
                 });
             },
-            Message::Save => {
-                return self.toasts.push(
-                    widget::toaster::Toast::new("Unimplemented: Please use Save As instead.")
-                ).map(cosmic::Action::App);
+            Message::MenuSave => {
+                return self.update(match &self.current_file {
+                    Some(url) => Message::Save(url.to_owned()),
+                    None => Message::MenuSaveAs
+                })
             },
-            Message::SaveAs => {
+            Message::MenuSaveAs => {
                 return cosmic::task::future(async {
                     use cosmic::dialog::file_chooser;
                     let filter = file_chooser::FileFilter::new("JSON Files").extension("json");
                     let dialog = file_chooser::save::Dialog::new()
                         .filter(filter);
-                    // TODO: should i open the file here directly or add another message for that? like in the example
                     match dialog.save_file().await {
-                        Ok(response) => { println!("selected to save {:?}", response.url()); Message::Dummy },
-                        // TODO: probably make a message that just logs smth to stderr
-                        Err(file_chooser::Error::Cancelled) => Message::Dummy,
-                        // TODO: display this error somehow, is a string the best way to store it?
+                        Ok(response) => match response.url() {
+                            Some(url) => Message::Save(url.to_owned()),
+                            None => Message::ErrorConsole("No file found".to_owned()),
+                        },
+                        Err(file_chooser::Error::Cancelled) => Message::ErrorConsole("File dialog closed".to_owned()),
                         Err(why) => Message::Error(why.to_string()),
                     }
                 });
             },
+            Message::Open(url) => {
+                self.current_file = Some(url.clone());
+                // TODO: async doesnt do anything here, just a remnant from when using tokio, which was incompatible with serde
+                return cosmic::task::future(async move {
+                    let path = match url.scheme() {
+                        "file" => url.to_file_path().unwrap(),
+                        other => {
+                            return Message::Error(format!("{url} has unknown scheme: {other}"));
+                        }
+                    };
+
+                    let mut file = match std::fs::File::open(&path) {
+                        Ok(file) => file,
+                        Err(why) => {
+                            return Message::Error(format!(
+                                "failed to open {}: {why}",
+                                path.display()
+                            ));
+                        }
+                    };
+
+                    let json = match serde_json::from_reader(&mut file) {
+                        Ok(json) => json,
+                        Err(why) => return Message::Error(format!("Failed to parse JSON: {why}")),
+                    };
+
+                    Message::LoadJSON(json)
+                });
+            },
+            Message::Save(url) => {
+                // TODO: do this properly without the dummy message
+                let message = || {
+                    let path = match url.scheme() {
+                        "file" => url.to_file_path().unwrap(),
+                        other => {
+                            return Message::Error(format!("{url} has unknown scheme: {other}"));
+                        }
+                    };
+
+                    let mut file = match std::fs::File::create(&path) {
+                        Ok(file) => file,
+                        Err(why) => {
+                            return Message::Error(format!(
+                                "failed to create {}: {why}",
+                                path.display()
+                            ));
+                        }
+                    };
+
+                    if let Err(why) = serde_json::to_writer(&mut file, &self.json) {
+                        return Message::Error(format!("Failed to parse JSON: {why}"));
+                    };
+                    
+                    Message::Dummy
+                };
+                return self.update(message());
+            },
             Message::InitJSON(lump) => {
+                self.skydefs_index = SkydefsIndex::None;
                 match lump {
                     LumpType::GAMECONF => self.json.data = ID24JsonData::gameconf(),
-                    // LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
-                    LumpType::SKYDEFS => {
-                        // TODO: REMOVE THIS
-                        self.skydefs_index = SkydefsIndex::Sky(0);
-                        self.json = serde_json::from_str(include_str!("id24json/test_files/skydefs_1.json")).unwrap()
-                    },
+                    LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
                     _ => ()
                 }
+            },
+            Message::LoadJSON(json) => {
+                self.skydefs_index = SkydefsIndex::None;
+                self.json = *json;
+                // TODO: figure out a nicer way to do this
+                self.nav.activate(*self.nav_ids.get(&(&self.json.data).into()).unwrap());
             },
             Message::SelectSky(Some(idx)) => {
                 self.skydefs_index = SkydefsIndex::Sky(idx);
@@ -336,6 +399,13 @@ impl cosmic::Application for EditorModel {
                     }
                 }
             },
+            Message::ChangeFireSpeed(speed) => {
+                if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
+                    if let Some(fire) = &mut skies[idx].fire {
+                        fire.updatetime = speed;
+                    }
+                }
+            },
             Message::ChangeSkyType(sky_type) => {
                 if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
                     let sky = &mut skies[idx];
@@ -362,6 +432,12 @@ impl cosmic::Application for EditorModel {
             Message::CloseToast(id) => {
                 self.toasts.remove(id);
             },
+            Message::Error(e) => {
+                self.error_status = Some(e);
+            },
+            Message::CloseError => {
+                self.error_status = None;
+            },
             Message::Quit => std::process::exit(0),
             _ => ()
         }
@@ -383,7 +459,11 @@ impl cosmic::Application for EditorModel {
                 .push(widget.into())
                 .align_y(Alignment::Center)
         }
-        let content: Element<Self::Message> = match self.nav.active_data() {
+        let mut content = Vec::new();
+        if let Some(e) = &self.error_status {
+            content.push(widget::warning(e).on_close(Message::CloseError).into());
+        }
+        let main_content: Element<Self::Message> = match self.nav.active_data() {
             Some(LumpType::GAMECONF) => {
                 if let ID24JsonData::GAMECONF {
                     title, author, version,
@@ -543,7 +623,7 @@ impl cosmic::Application for EditorModel {
                                 let time_spin = widget::spin_button(
                                     (*updatetime).to_string(), *updatetime,
                                     0.1, 0.0, 100.0,
-                                    |_| Message::Dummy
+                                    Message::ChangeFireSpeed
                                 );
                                 properties_list.push(aligned_row("Animation Speed (seconds):", time_spin));
                                 properties_list.push(aligned_row("Palette:", widget::text::heading("coming soon")));
@@ -582,7 +662,6 @@ impl cosmic::Application for EditorModel {
                                 ))
                         ));
                     let content = widget::row::with_children(vec![
-                        // Left panel
                         widget::container(properties_list)
                             .width(Length::FillPortion(2))
                             .into(),
@@ -622,7 +701,6 @@ impl cosmic::Application for EditorModel {
                         .padding(10)
                         .spacing(10);
 
-                    // Wrap in a container for the final element
                     widget::container(content)
                         .width(Length::Fill)
                         .height(Length::Fill)
@@ -643,196 +721,8 @@ impl cosmic::Application for EditorModel {
             },
         };
 
-        widget::toaster(&self.toasts, content)
-    }
-}
+        content.push(main_content);
 
-// TODO: remove all old egui stuff below this comment
-
-struct MyApp {
-    json: ID24Json,
-    current_editor: LumpType,
-    selected_sky_index: Option<usize>,
-    selected_flatmap_index: Option<usize>,
-}
-
-impl Default for MyApp {
-    fn default() -> Self {
-        Self {
-            json: ID24Json::default(),
-            current_editor: LumpType::SKYDEFS,
-            selected_sky_index: None,
-            selected_flatmap_index: None
-        }
-    }
-}
-
-impl MyApp {
-    fn top_menu_bar(&mut self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    // TODO: add some real error handling instead of expects
-                    if ui.button("Open").clicked() {
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("JSON", &["json"])
-                            .pick_file() {
-                            let file = std::fs::File::open(path)
-                                .expect("file should open read only");
-                            self.json = serde_json::from_reader(file).expect("file should be valid id24 json");
-                            println!("json: {:?}", self.json);
-                        }
-                    }
-                    if ui.button("Save As").clicked() {
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("JSON", &["json"])
-                            .save_file() {
-                            let file = std::fs::File::create(path)
-                                .expect("file should open write only");
-                            serde_json::to_writer_pretty(file, &self.json).expect("json should have been written i hope");
-                        }
-                    }
-                    if ui.button("Quit").clicked() {
-                        std::process::exit(0);
-                    }
-                });
-            })
-        });
-    }
-}
-
-// TODO: name this better
-fn list<T: Default + Display>(ui: &mut egui::Ui, heading: &str, list: &mut Vec<T>, list_index: &mut Option<usize>) {
-    ui.push_id(heading, |ui| {  // Add unique ID scope
-        ui.heading(heading);
-        ui.horizontal(|ui| {
-            if ui.button("➕").clicked() {
-                list.push(T::default());
-                *list_index = Some(list.len() - 1);
-            }
-            if ui.button("❌").clicked() {
-                if let Some(index) = list_index {
-                    list.remove(*index);
-                    *list_index = None;
-                }
-            }
-        });
-
-        // TODO: figure out if TableBuilder is even worth it here
-        TableBuilder::new(ui)
-            .column(Column::auto())  // For the item name
-            .header(20.0, |mut header| {
-                header.col(|ui| {
-                    ui.heading("Items");
-                });
-            })
-            .body(|mut body| {
-                for (index, item) in list.iter().enumerate() {
-                    body.row(20.0, |mut row| {
-                        row.col(|ui| {
-                            let is_selected = *list_index == Some(index);
-                            if ui.selectable_label(is_selected, item.to_string()).clicked() {
-                                *list_index = Some(index);
-                            }
-                        });
-                    });
-                }
-            });
-    });
-}
-
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.top_menu_bar(ctx);
-        // TODO: maybe use egui_dock for proper tabs?
-        egui::TopBottomPanel::top("editor_tabs").show(ctx, |ui| {
-            ui.horizontal_top(|ui| {
-                ui.selectable_value(&mut self.current_editor, LumpType::GAMECONF, "GAMECONF");
-                ui.selectable_value(&mut self.current_editor, LumpType::DEMOLOOP, "DEMOLOOP");
-                ui.selectable_value(&mut self.current_editor, LumpType::SBARDEF, "SBARDEF");
-                ui.selectable_value(&mut self.current_editor, LumpType::SKYDEFS, "SKYDEFS");
-                ui.selectable_value(&mut self.current_editor, LumpType::TRAKINFO, "TRAKINFO");
-                ui.selectable_value(&mut self.current_editor, LumpType::Interlevel, "Interlevel");
-                ui.selectable_value(&mut self.current_editor, LumpType::Finale, "Finale");
-            });
-        });
-        // TODO: move this and the central panel inside the match so that they're not separately checking for skydefs
-        egui::SidePanel::right("right panel").min_width(75.0).show(ctx, |ui| {
-            // TODO: make it so that the lists dont move and resize as elements are added and removed, we do still want them resizable by users
-            if let ID24JsonData::SKYDEFS { skies, flatmapping } = &mut self.json.data {
-                if skies.is_none() {
-                    *skies = Some(Vec::new());
-                }
-                if let Some(skies) = skies {
-                    list(ui, "Skies", skies, &mut self.selected_sky_index);
-                }
-                ui.separator();
-                if flatmapping.is_none() {
-                    *flatmapping = Some(Vec::new());
-                }
-                if let Some(flatmapping) = flatmapping {
-                    list(ui, "Flat Mappings", flatmapping, &mut self.selected_flatmap_index);
-                }
-            }
-        });
-
-        // TODO: split match arms into separate functions
-        egui::CentralPanel::default().show(ctx, |ui| {
-            // TODO: don't hard code everything at the top level to be skydefs
-            match &mut self.json.data {
-                ID24JsonData::SKYDEFS { skies, .. } => {
-                    if let Some(skies) = skies.as_mut() {
-                        if let Some(selected_index) = self.selected_sky_index {
-                            if let Some(selected_sky) = skies.get_mut(selected_index) {
-                                egui::Grid::new("sky_parameters_grid")
-                                    .num_columns(2)
-                                    .spacing([36.0, 4.0])
-                                    .show(ui, |ui| {
-                                        ui.label("Name:");
-                                        let text_edit = egui::TextEdit::singleline(&mut selected_sky.name)
-                                            .desired_width(75.0);
-                                        ui.add(text_edit);
-
-                                        ui.end_row();
-
-                                        // TODO: display units for all of these
-
-                                        ui.label("Mid:");
-                                        ui.add(egui::DragValue::new(&mut selected_sky.mid).speed(1));
-                                        ui.end_row();
-
-                                        ui.label("Scroll X:");
-                                        ui.add(egui::DragValue::new(&mut selected_sky.scrollx).speed(0.1));
-                                        ui.end_row();
-
-                                        ui.label("Scroll Y:");
-                                        ui.add(egui::DragValue::new(&mut selected_sky.scrolly).speed(0.1));
-                                        ui.end_row();
-
-                                        ui.label("Scale X:");
-                                        ui.add(egui::DragValue::new(&mut selected_sky.scalex).speed(0.1));
-                                        ui.end_row();
-
-                                        ui.label("Scale Y:");
-                                        ui.add(egui::DragValue::new(&mut selected_sky.scaley).speed(0.1));
-                                        ui.end_row();
-
-                                        ui.label("Sky type:");
-                                        egui::ComboBox::new("sky_type", "")
-                                            .selected_text(format!("{:?}", selected_sky.sky_type))
-                                            .show_ui(ui, |ui| {
-                                                for kind in skydefs::SkyType::VARIANTS {
-                                                    ui.selectable_value(&mut selected_sky.sky_type, *kind, format!("{:?}", kind));
-                                                }
-                                            });
-                                        ui.end_row();
-                                    });
-                            }
-                        }
-                    }
-                }
-                _ => { ui.label("Unimplemented!"); }
-            }
-        });
+        widget::toaster(&self.toasts, widget::column::with_children(content))
     }
 }
