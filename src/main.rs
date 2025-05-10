@@ -13,6 +13,7 @@ use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Alignment, Length};
 
 use cosmic::prelude::*;
+use cosmic::widget::menu::ItemWidth;
 use strum::{IntoEnumIterator, VariantArray};
 
 // TODO: figure out how to bundle icons on windows/mac
@@ -213,7 +214,7 @@ impl cosmic::Application for EditorModel {
                     menu::Item::Button("Quit", None, MyMenuAction::Quit)
                 ],
             ),
-        )]);
+        )]).item_width(ItemWidth::Uniform(200));
 
         vec![menu_bar.into()]
     }
@@ -301,6 +302,8 @@ impl cosmic::Application for EditorModel {
                 });
             },
             Message::Save(url) => {
+                // TODO: maybe move this into Save As somehow, dont need to be setting it every time we save
+                self.current_file = Some(url.clone());
                 // TODO: do this properly without the dummy message
                 let message = || {
                     let path = match url.scheme() {
@@ -545,12 +548,12 @@ impl cosmic::Application for EditorModel {
                         );
                         let scrollx_spin = widget::spin_button(
                             (*scrollx).to_string(), *scrollx,
-                            0.1, 0.0, 100.0,
+                            0.1, -100.0, 100.0,
                             |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScrollX(v))
                         );
                         let scrolly_spin = widget::spin_button(
                             (*scrolly).to_string(), *scrolly,
-                            0.1, 0.0, 100.0,
+                            0.1, -100.0, 100.0,
                             |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScrollY(v))
                         );
                         let scalex_spin = widget::spin_button(
@@ -593,12 +596,12 @@ impl cosmic::Application for EditorModel {
                                 );
                                 let scrollx_spin = widget::spin_button(
                                     (*scrollx).to_string(), *scrollx,
-                                    0.1, 0.0, 100.0,
+                                    0.1, -100.0, 100.0,
                                     |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScrollX(v))
                                 );
                                 let scrolly_spin = widget::spin_button(
                                     (*scrolly).to_string(), *scrolly,
-                                    0.1, 0.0, 100.0,
+                                    0.1, -100.0, 100.0,
                                     |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScrollY(v))
                                 );
                                 let scalex_spin = widget::spin_button(
