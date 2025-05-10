@@ -15,6 +15,7 @@ use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 
 use cosmic::prelude::*;
+use cosmic::widget::button::ButtonClass;
 use strum::VariantArray;
 
 // TODO: before making too much gui progress, decide if egui is the right option
@@ -294,6 +295,19 @@ impl cosmic::Application for EditorModel {
             Message::NewFlatmapping => {
                 if let ID24JsonData::SKYDEFS { flatmapping, .. } = &mut self.json.data {
                     flatmapping.get_or_insert_with(Vec::new).push(skydefs::FlatMapping::default());
+                }
+            },
+            Message::DeleteSky(idx) => {
+                // TODO: make this async in case the list is very large
+                if let ID24JsonData::SKYDEFS { skies: Some(skies), .. } = &mut self.json.data {
+                    self.skydefs_index = SkydefsIndex::None;
+                    skies.remove(idx);
+                }
+            },
+            Message::DeleteFlatmapping(idx) => {
+                if let ID24JsonData::SKYDEFS { flatmapping: Some(flatmapping), .. } = &mut self.json.data {
+                    self.skydefs_index = SkydefsIndex::None;
+                    flatmapping.remove(idx);
                 }
             },
             Message::UpdateSkyTexProp(skymessage) => {
@@ -577,12 +591,26 @@ impl cosmic::Application for EditorModel {
 
                         widget::container(
                             widget::column::with_children(vec![
-                                widget::button::text("New Sky").on_press(Message::NewSky).into(),
+                                widget::row::with_children(vec![
+                                    widget::button::text("New Sky").on_press(Message::NewSky).into(),
+                                    widget::horizontal_space().into(),
+                                    widget::button::text("Delete").on_press_maybe(match self.skydefs_index {
+                                        SkydefsIndex::Sky(size) => Some(Message::DeleteSky(size)),
+                                        _ => None
+                                    }).into(),
+                                ]).into(),
                                 widget::container(widget::scrollable(skies_list))
                                     .height(Length::FillPortion(1))
                                     .into(),
                                 widget::divider::horizontal::heavy().into(),
-                                widget::button::text("New Flat Mapping").on_press(Message::NewFlatmapping).into(),
+                                widget::row::with_children(vec![
+                                    widget::button::text("New Flat Mapping").on_press(Message::NewFlatmapping).into(),
+                                    widget::horizontal_space().into(),
+                                    widget::button::text("Delete").on_press_maybe(match self.skydefs_index {
+                                        SkydefsIndex::Flatmapping(size) => Some(Message::DeleteFlatmapping(size)),
+                                        _ => None
+                                    }).into(),
+                                ]).into(),
                                 widget::container(widget::scrollable(flatmapping_list))
                                     .height(Length::FillPortion(1))
                                     .into(),
