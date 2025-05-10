@@ -2,18 +2,40 @@ use std::fmt::{Display, Formatter};
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct Fire {
-    updatetime: f32,
-    palette: Vec<u8>
+    pub updatetime: f32,
+    pub palette: Vec<u8>
+}
+
+impl Default for Fire {
+    fn default() -> Self {
+        Self {
+            updatetime: 0.05715, // 2 tics
+            palette: Vec::new() // make this be the PSX palette maybe?
+        }
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
 pub struct ForegroundTex {
-    name: String,
-    mid: u32,
-    scrollx: f32,
-    scrolly: f32,
-    scalex: f32,
-    scaley: f32,
+    pub name: String,
+    pub mid: u16,
+    pub scrollx: f32,
+    pub scrolly: f32,
+    pub scalex: f32,
+    pub scaley: f32,
+}
+
+impl Default for ForegroundTex {
+    fn default() -> Self {
+        Self {
+            name: "SKY2".to_owned(),
+            mid: 100,
+            scrollx: 0.0,
+            scrolly: 0.0,
+            scalex: 1.0,
+            scaley: 1.0,
+        }
+    }
 }
 
 #[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, strum_macros::VariantArray, PartialEq, Clone, Copy, Debug)]

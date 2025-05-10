@@ -93,10 +93,24 @@ enum SkydefsIndex {
 }
 
 #[derive(Debug, Clone)]
-enum Message {
+enum SkyTexMessage {
+    ChangeName(String),
     ChangeMid(u16),
+    ChangeScrollX(f32),
+    ChangeScrollY(f32),
+    ChangeScaleX(f32),
+    ChangeScaleY(f32),
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    UpdateSkyTexProp(SkyTexMessage),
+    UpdateSkyTexPropFG(SkyTexMessage),
+    ChangeSkyType(skydefs::SkyType),
+    NewSky,
+    NewFlatmapping,
     SelectSky(Option<usize>),
-    SelectFlatmap(Option<usize>),
+    SelectFlatmapping(Option<usize>),
     EditText(widget::text_editor::Action),
     InitJSON(LumpType),
     CloseToast(widget::ToastId),
@@ -155,6 +169,7 @@ impl cosmic::Application for EditorModel {
             .data::<LumpType>(LumpType::TRAKINFO);
 
         nav.insert()
+            .divider_above(true)
             .text("Settings")
             .data::<Page>(Page::Settings);
 
@@ -230,6 +245,22 @@ impl cosmic::Application for EditorModel {
                     widget::toaster::Toast::new("Unimplemented: Please use Save As instead.")
                 ).map(cosmic::Action::App);
             },
+            Message::SaveAs => {
+                return cosmic::task::future(async {
+                    use cosmic::dialog::file_chooser;
+                    let filter = file_chooser::FileFilter::new("JSON Files").extension("json");
+                    let dialog = file_chooser::save::Dialog::new()
+                        .filter(filter);
+                    // TODO: should i open the file here directly or add another message for that? like in the example
+                    match dialog.save_file().await {
+                        Ok(response) => { println!("selected to save {:?}", response.url()); Message::Dummy },
+                        // TODO: probably make a message that just logs smth to stderr
+                        Err(file_chooser::Error::Cancelled) => Message::Dummy,
+                        // TODO: display this error somehow, is a string the best way to store it?
+                        Err(why) => Message::Error(why.to_string()),
+                    }
+                });
+            },
             Message::InitJSON(lump) => {
                 match lump {
                     LumpType::GAMECONF => self.json.data = ID24JsonData::gameconf(),
@@ -245,15 +276,66 @@ impl cosmic::Application for EditorModel {
             Message::SelectSky(Some(idx)) => {
                 self.skydefs_index = SkydefsIndex::Sky(idx);
             },
-            Message::SelectFlatmap(Some(idx)) => {
+            Message::SelectFlatmapping(Some(idx)) => {
                 self.skydefs_index = SkydefsIndex::Flatmapping(idx);
             },
-            Message::SelectSky(None) | Message::SelectFlatmap(None) => {
+            Message::SelectSky(None) | Message::SelectFlatmapping(None) => {
                 self.skydefs_index = SkydefsIndex::None;
             },
-            Message::ChangeMid(mid) => {
+            Message::NewSky => {
+                if let ID24JsonData::SKYDEFS { skies, .. } = &mut self.json.data {
+                    skies.get_or_insert_with(Vec::new).push(skydefs::Sky::default());
+                }
+            },
+            Message::NewFlatmapping => {
+                if let ID24JsonData::SKYDEFS { flatmapping, .. } = &mut self.json.data {
+                    flatmapping.get_or_insert_with(Vec::new).push(skydefs::FlatMapping::default());
+                }
+            },
+            Message::UpdateSkyTexProp(skymessage) => {
                 if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
-                    skies[idx].mid = mid;
+                    match skymessage {
+                        SkyTexMessage::ChangeName(name) => skies[idx].name = name,
+                        SkyTexMessage::ChangeMid(mid) => skies[idx].mid = mid,
+                        SkyTexMessage::ChangeScaleX(scale) => skies[idx].scalex = scale,
+                        SkyTexMessage::ChangeScaleY(scale) => skies[idx].scaley = scale,
+                        SkyTexMessage::ChangeScrollX(scroll) => skies[idx].scrollx = scroll,
+                        SkyTexMessage::ChangeScrollY(scroll) => skies[idx].scrolly = scroll,
+                    }
+                }
+            },
+            Message::UpdateSkyTexPropFG(skymessage) => {
+                if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
+                    if let Some(foreground) = &mut skies[idx].foregroundtex {
+                        match skymessage {
+                            SkyTexMessage::ChangeName(name) => foreground.name = name,
+                            SkyTexMessage::ChangeMid(mid) => foreground.mid = mid,
+                            SkyTexMessage::ChangeScaleX(scale) => foreground.scalex = scale,
+                            SkyTexMessage::ChangeScaleY(scale) => foreground.scaley = scale,
+                            SkyTexMessage::ChangeScrollX(scroll) => foreground.scrollx = scroll,
+                            SkyTexMessage::ChangeScrollY(scroll) => foreground.scrolly = scroll,
+                        }
+                    }
+                }
+            },
+            Message::ChangeSkyType(sky_type) => {
+                if let (ID24JsonData::SKYDEFS { skies: Some(skies), .. }, SkydefsIndex::Sky(idx)) = (&mut self.json.data, self.skydefs_index) {
+                    let sky = &mut skies[idx];
+                    sky.sky_type = sky_type;
+                    match sky_type {
+                        skydefs::SkyType::Standard => {
+                            sky.foregroundtex = None;
+                            sky.fire = None;
+                        },
+                        skydefs::SkyType::WithForeground => {
+                            sky.foregroundtex = Some(skydefs::ForegroundTex::default());
+                            sky.fire = None;
+                        },
+                        skydefs::SkyType::Fire => {
+                            sky.foregroundtex = None;
+                            sky.fire = Some(skydefs::Fire::default());
+                        }
+                    }
                 }
             },
             Message::EditText(action) => {
@@ -339,11 +421,12 @@ impl cosmic::Application for EditorModel {
             },
             Some(LumpType::SKYDEFS) => {
                 if let ID24JsonData::SKYDEFS { skies, flatmapping } = &self.json.data {
-                    let properties_list =
+                    use skydefs::{Sky, SkyType, ForegroundTex, Fire};
+                    let mut properties_list = Vec::new();
                     if let (Some(skies), SkydefsIndex::Sky(idx)) = (skies, self.skydefs_index) {
                         // TODO: use .get and check that the sky exists
                         // we shouldn't run into a case where the index is out of bounds but just in case
-                        let id24json::skydefs::Sky {
+                        let Sky {
                             name,
                             mid,
                             scrollx,
@@ -355,57 +438,130 @@ impl cosmic::Application for EditorModel {
                             foregroundtex
                         } = &skies[idx];
                         let name_input = widget::text_input("SKY1", name)
-                            .on_input(|s| Message::Dummy);
+                            .on_input(|s| Message::UpdateSkyTexProp(SkyTexMessage::ChangeName(s)));
                         let mid_spin = widget::spin_button(
-                            (*mid).to_string(), *mid, // TODO: add label here
+                            (*mid).to_string(), *mid,
                             1, 0, 1024, // TODO: figure out proper values for these
-                            Message::ChangeMid
+                            |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeMid(v))
                         );
                         let scrollx_spin = widget::spin_button(
                             (*scrollx).to_string(), *scrollx,
                             0.1, 0.0, 100.0,
-                            |_| Message::Dummy
+                            |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScrollX(v))
                         );
                         let scrolly_spin = widget::spin_button(
                             (*scrolly).to_string(), *scrolly,
                             0.1, 0.0, 100.0,
-                            |_| Message::Dummy
+                            |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScrollY(v))
                         );
                         let scalex_spin = widget::spin_button(
                             (*scalex).to_string(), *scalex,
                             0.1, 0.0, 100.0,
-                            |_| Message::Dummy
+                            |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScaleX(v))
                         );
                         let scaley_spin = widget::spin_button(
                             (*scaley).to_string(), *scaley,
                             0.1, 0.0, 100.0,
-                            |_| Message::Dummy
+                            |v| Message::UpdateSkyTexProp(SkyTexMessage::ChangeScaleY(v))
                         );
                         let type_pick = cosmic::iced::widget::pick_list(
-                            skydefs::SkyType::VARIANTS,
+                            SkyType::VARIANTS,
                             Some(sky_type),
-                            |s| Message::Dummy
+                            Message::ChangeSkyType
                         );
-                        widget::list_column()
-                            .add(aligned_row("Name:", name_input))
-                            .add(aligned_row("Mid:", mid_spin))
-                            .add(aligned_row("Scroll X:", scrollx_spin))
-                            .add(aligned_row("Scroll Y:", scrolly_spin))
-                            .add(aligned_row("Scale X:", scalex_spin))
-                            .add(aligned_row("Scale Y:", scaley_spin))
-                            .add(aligned_row("Type:", type_pick))
+                        properties_list.push(aligned_row("Texture:", name_input));
+                        properties_list.push(aligned_row("Mid:", mid_spin));
+                        properties_list.push(aligned_row("Scroll X (seconds):", scrollx_spin));
+                        properties_list.push(aligned_row("Scroll Y (seconds):", scrolly_spin));
+                        properties_list.push(aligned_row("Scale X:", scalex_spin));
+                        properties_list.push(aligned_row("Scale Y:", scaley_spin));
+                        properties_list.push(aligned_row("Type:", type_pick));
+                        match (sky_type, fire, foregroundtex) {
+                            (SkyType::WithForeground, _, Some(ForegroundTex {
+                                name,
+                                mid,
+                                scrollx,
+                                scrolly,
+                                scalex,
+                                scaley })) => {
+                                // TODO: reduce duplication in this section and the one above
+                                let name_input = widget::text_input("SKY2", name)
+                                    .on_input(|s| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeName(s)));
+                                let mid_spin = widget::spin_button(
+                                    (*mid).to_string(), *mid,
+                                    1, 0, 1024, // TODO: figure out proper values for these
+                                    |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeMid(v))
+                                );
+                                let scrollx_spin = widget::spin_button(
+                                    (*scrollx).to_string(), *scrollx,
+                                    0.1, 0.0, 100.0,
+                                    |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScrollX(v))
+                                );
+                                let scrolly_spin = widget::spin_button(
+                                    (*scrolly).to_string(), *scrolly,
+                                    0.1, 0.0, 100.0,
+                                    |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScrollY(v))
+                                );
+                                let scalex_spin = widget::spin_button(
+                                    (*scalex).to_string(), *scalex,
+                                    0.1, 0.0, 100.0,
+                                    |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScaleX(v))
+                                );
+                                let scaley_spin = widget::spin_button(
+                                    (*scaley).to_string(), *scaley,
+                                    0.1, 0.0, 100.0,
+                                    |v| Message::UpdateSkyTexPropFG(SkyTexMessage::ChangeScaleY(v))
+                                );
+                                properties_list.push(aligned_row("Foreground Texture:", name_input));
+                                properties_list.push(aligned_row("Foreground Mid:", mid_spin));
+                                properties_list.push(aligned_row("Foreground Scroll X (seconds):", scrollx_spin));
+                                properties_list.push(aligned_row("Foreground Scroll Y (seconds):", scrolly_spin));
+                                properties_list.push(aligned_row("Foreground Scale X:", scalex_spin));
+                                properties_list.push(aligned_row("Foreground Scale Y:", scaley_spin));
+                            }
+                            (SkyType::Fire, Some(Fire {
+                                updatetime,
+                                palette }), _) => {
+                                let time_spin = widget::spin_button(
+                                    (*updatetime).to_string(), *updatetime,
+                                    0.1, 0.0, 100.0,
+                                    |_| Message::Dummy
+                                );
+                                properties_list.push(aligned_row("Animation Speed (seconds):", time_spin));
+                            }
+                            _ => ()
+                        }
                     } else if let (Some(flatmapping), SkydefsIndex::Flatmapping(idx)) = (flatmapping, self.skydefs_index) {
                         let skydefs::FlatMapping { flat, sky } = &flatmapping[idx];
                         let flat_input = widget::text_input("F_SKY1", flat)
                             .on_input(|s| Message::Dummy);
                         let sky_input = widget::text_input("SKY1", sky)
                             .on_input(|s| Message::Dummy);
-                        widget::list_column()
-                            .add(aligned_row("Flat:", flat_input))
-                            .add(aligned_row("Sky:", sky_input))
-                    } else {
-                        widget::list_column()
-                    };
+                        properties_list.push(aligned_row("Flat:", flat_input));
+                        properties_list.push(aligned_row("Sky:", sky_input));
+                    }
+                    let properties_list = properties_list.into_iter().fold(
+                        widget::list_column(),
+                        widget::ListColumn::add
+                    );
+                    let skies_list = skies.as_ref().map_or(
+                        widget::list_column(),
+                        |s| s.iter().enumerate().fold(
+                            widget::list_column(),
+                            |acc, (idx, sky)|
+                                acc.add(widget::button::text(&sky.name).on_press(
+                                    Message::SelectSky(Some(idx))
+                                ))
+                    ));
+                    let flatmapping_list = flatmapping.as_ref().map_or(
+                        widget::list_column(),
+                        |s| s.iter().enumerate().fold(
+                            widget::list_column(),
+                            |acc, (idx, mapping)|
+                                acc.add(widget::button::text(&mapping.flat).on_press(
+                                    Message::SelectFlatmapping(Some(idx))
+                                ))
+                        ));
                     let content = widget::row::with_children(vec![
                         // Left panel
                         widget::container(properties_list)
@@ -414,19 +570,18 @@ impl cosmic::Application for EditorModel {
 
                         widget::divider::vertical::heavy().into(),
 
-                        // Right side with two stacked panels
                         widget::container(
                             widget::column::with_children(vec![
-                                // Upper right panel
-                                widget::container(widget::list_column().add(widget::text::body("skies placeholder")))
+                                widget::button::text("New Sky").on_press(Message::NewSky).into(),
+                                widget::container(widget::scrollable(skies_list))
                                     .height(Length::FillPortion(1))
                                     .into(),
                                 widget::divider::horizontal::heavy().into(),
-                                // Lower right panel
-                                widget::container(widget::list_column().add(widget::text::body("flatmapping placeholder")))
+                                widget::button::text("New Flat Mapping").on_press(Message::NewFlatmapping).into(),
+                                widget::container(widget::scrollable(flatmapping_list))
                                     .height(Length::FillPortion(1))
                                     .into(),
-                            ])
+                            ]).spacing(5)
                         )
                             .width(Length::FillPortion(1))
                             .into(),
