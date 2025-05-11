@@ -186,7 +186,8 @@ impl cosmic::Application for EditorModel {
             nav,
             nav_ids,
             key_binds: HashMap::from([
-                // TODO: figure out why keybinds dont work and fix display of Ctrl+Shift+S being cut off
+                // TODO: handle keyboard events so the keybinds actually do anything
+                // see cosmic-edit for an example
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("o".into()) }, MyMenuAction::Open),
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("s".into()) }, MyMenuAction::Save),
                 (KeyBind { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: Key::Character("s".into()) }, MyMenuAction::SaveAs),
