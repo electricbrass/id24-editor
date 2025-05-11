@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide the console window on Windows in release
 
 mod id24json;
+mod pages;
+mod widgets;
 
 use id24json::{ID24Json, ID24JsonData, skydefs};
 
@@ -223,6 +225,7 @@ impl cosmic::Application for EditorModel {
         Some(&self.nav)
     }
 
+    // TODO: figure out why this is being called when pressing the enter key in the save as dialog
     fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Message>> {
         self.nav.activate(id);
         if let Some(lump) = self.nav.data::<LumpType>(id) {
@@ -718,7 +721,7 @@ impl cosmic::Application for EditorModel {
                 }
             },
             _ => {
-                widget::container(widget::text::title3("Unimplemented!!"))
+                widget::container(widget::text::title3("<---- Select a lump type"))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
                     .into()
