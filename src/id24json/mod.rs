@@ -29,6 +29,7 @@ pub enum ID24JsonData {
         options: Option<String> // TODO: make an actual type for the options
     },
     DEMOLOOP {
+        #[serde(serialize_with = "serialize_vec_non_empty")]
         entries: Vec<demoloop::Entry>
     },
     #[serde(rename = "statusbar")]

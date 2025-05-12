@@ -307,6 +307,7 @@ impl cosmic::Application for EditorModel {
             },
             Message::Save(url) => {
                 // TODO: maybe move this into Save As somehow, dont need to be setting it every time we save
+                // and/or make a message just for this. would need to figure out how to send multiple messages from Open
                 self.current_file = Some(url.clone());
                 // TODO: do this properly without the dummy message
                 let message = || {
