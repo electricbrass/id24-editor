@@ -11,11 +11,11 @@ use std::collections::HashMap;
 use cosmic::widget;
 use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
-use cosmic::iced::keyboard::Key;
-use cosmic::iced::{Alignment, Length};
+use cosmic::iced::keyboard::{Key, Modifiers};
+use cosmic::iced::{event, keyboard, Alignment, Length, Subscription};
 
 use cosmic::prelude::*;
-use cosmic::widget::menu::ItemWidth;
+use cosmic::widget::menu::{Action, ItemWidth};
 use strum::{IntoEnumIterator, VariantArray};
 use crate::widgets::aligned_row;
 // TODO: figure out how to bundle icons on windows/mac
@@ -124,6 +124,7 @@ enum Message {
     CloseError,
     Error(String),
     ErrorConsole(String),
+    Key(Modifiers, Key),
     Dummy
 }
 
@@ -146,6 +147,18 @@ impl cosmic::Application for EditorModel {
 
     fn core_mut(&mut self) -> &mut cosmic::Core {
         &mut self.core
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        event::listen_with(|event, status, _window_id| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
+                match status {
+                    event::Status::Ignored => Some(Message::Key(modifiers, key)),
+                    event::Status::Captured => None,
+                }
+            }
+            _ => None,
+        })
     }
 
     fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
@@ -335,6 +348,13 @@ impl cosmic::Application for EditorModel {
                 // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
                 self.skydefs_page.update(&mut self.json, message);
             },
+            Message::Key(modifiers, key) => {
+                for (key_bind, action) in &self.key_binds {
+                    if key_bind.matches(modifiers, &key) {
+                        return self.update(action.message());
+                    }
+                }
+            }
             Message::EditText(action) => self.text_content.perform(action),
             Message::CloseToast(id) => self.toasts.remove(id),
             Message::Error(e) => self.error_status = Some(e),
