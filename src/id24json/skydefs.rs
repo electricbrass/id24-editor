@@ -16,7 +16,7 @@ impl Default for Fire {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
-pub struct ForegroundTex {
+pub struct SkyTex {
     pub name: String,
     pub mid: u16,
     pub scrollx: f32,
@@ -25,10 +25,10 @@ pub struct ForegroundTex {
     pub scaley: f32,
 }
 
-impl Default for ForegroundTex {
+impl Default for SkyTex {
     fn default() -> Self {
         Self {
-            name: "SKY2".to_owned(),
+            name: "SKY1".to_owned(),
             mid: 100,
             scrollx: 0.0,
             scrolly: 0.0,
@@ -60,26 +60,17 @@ impl Display for SkyType {
 pub struct Sky {
     #[serde(rename = "type")]
     pub sky_type: SkyType,
-    pub name: String,
-    pub mid: u16,
-    pub scrollx: f32,
-    pub scrolly: f32,
-    pub scalex: f32,
-    pub scaley: f32,
+    #[serde(flatten)]
+    pub backgroundtex: SkyTex,
     pub fire: Option<Fire>,
-    pub foregroundtex: Option<ForegroundTex>
+    pub foregroundtex: Option<SkyTex>
 }
 
 impl Default for Sky {
     fn default() -> Self {
         Self {
             sky_type: SkyType::Standard,
-            name: "SKY1".to_owned(),
-            mid: 100,
-            scrollx: 0.0,
-            scrolly: 0.0,
-            scalex: 1.0,
-            scaley: 1.0,
+            backgroundtex: SkyTex::default(),
             fire: None,
             foregroundtex: None
         }
@@ -141,12 +132,14 @@ mod test {
         assert_eq!(data.data, ID24JsonData::SKYDEFS {
             skies: Some(vec![Sky {
                 sky_type: SkyType::Standard,
-                name: "SKY1".to_owned(),
-                mid: 100,
-                scrollx: 1.0,
-                scrolly: 2.0,
-                scalex: 3.0,
-                scaley: 4.0,
+                backgroundtex: SkyTex {
+                    name: "SKY1".to_owned(),
+                    mid: 100,
+                    scrollx: 1.0,
+                    scrolly: 2.0,
+                    scalex: 3.0,
+                    scaley: 4.0,
+                },
                 fire: None,
                 foregroundtex: None
             }]),

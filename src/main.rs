@@ -332,20 +332,13 @@ impl cosmic::Application for EditorModel {
                 self.nav.activate(*self.nav_ids.get(&(&self.json.data).into()).unwrap());
             },
             Message::SkydefsMessage(message) => {
+                // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
                 self.skydefs_page.update(&mut self.json, message);
             },
-            Message::EditText(action) => {
-                self.text_content.perform(action);
-            },
-            Message::CloseToast(id) => {
-                self.toasts.remove(id);
-            },
-            Message::Error(e) => {
-                self.error_status = Some(e);
-            },
-            Message::CloseError => {
-                self.error_status = None;
-            },
+            Message::EditText(action) => self.text_content.perform(action),
+            Message::CloseToast(id) => self.toasts.remove(id),
+            Message::Error(e) => self.error_status = Some(e),
+            Message::CloseError => self.error_status = None,
             Message::Quit => std::process::exit(0),
             _ => ()
         }
@@ -353,9 +346,6 @@ impl cosmic::Application for EditorModel {
         Task::none()
     }
 
-    #[allow(clippy::too_many_lines)]
-    // not sure how much splitting this would help with organization,
-    // at least right now, so make it stop yelling at me
     fn view(&self) -> Element<Self::Message> {
         let mut content = Vec::new();
         if let Some(e) = &self.error_status {
