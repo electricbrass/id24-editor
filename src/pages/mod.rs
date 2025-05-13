@@ -1,1 +1,1 @@
-mod skydefs;
+pub mod skydefs;
