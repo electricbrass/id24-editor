@@ -168,7 +168,7 @@ impl Page {
                             }))
                 ));
             let content = widget::row::with_children(vec![
-                widget::container(properties_list)
+                widget::container(widget::scrollable(properties_list))
                     .width(Length::FillPortion(2))
                     .into(),
 
