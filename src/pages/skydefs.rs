@@ -9,6 +9,8 @@ use crate::widgets::aligned_row;
 #[derive(Default)]
 pub struct Page {
     skydefs_index: SkydefsIndex,
+    skies_model: widget::segmented_button::SingleSelectModel,
+    flatmapping_model: widget::segmented_button::SingleSelectModel,
 }
 
 #[derive(PartialEq, Clone, Copy, Debug, Default)]
@@ -20,7 +22,7 @@ enum SkydefsIndex {
 }
 
 #[derive(Debug, Clone)]
-enum SkyTexMessage {
+pub enum SkyTexMessage {
     ChangeName(String),
     ChangeMid(u16),
     ChangeScrollX(f32),
@@ -51,9 +53,8 @@ impl Page {
 
     #[allow(clippy::too_many_lines)]
     // TODO: make this less huge, just dont want it to yell at me for just a bit longer
-    pub fn view<'a>(&self, json: &'a ID24Json) -> Element<'a, Message> {
+    pub fn view<'a>(&'a self, json: &'a ID24Json) -> Element<'a, Message> {
         if let ID24JsonData::SKYDEFS { skies, flatmapping } = &json.data {
-            use crate::id24json::skydefs::{Sky, SkyType, SkyTex, Fire};
             let mut properties_list = Vec::new();
             if let (Some(skies), SkydefsIndex::Sky(idx)) = (skies, self.skydefs_index) {
                 // TODO: use .get and check that the sky exists
@@ -112,7 +113,7 @@ impl Page {
                 properties_list.push(aligned_row("Type:", type_pick));
                 match (sky_type, fire, foregroundtex) {
                     (SkyType::WithForeground, _, Some(foregroundtex)) => {
-                        tex_fields!(foregroundtex, Message::UpdateSkyTexProp, "Foreground ");
+                        tex_fields!(foregroundtex, Message::UpdateSkyTexPropFG, "Foreground ");
                     }
                     (SkyType::Fire, Some(Fire {
                                              updatetime,
@@ -145,18 +146,26 @@ impl Page {
                 |s| s.iter().enumerate().fold(
                     widget::list_column(),
                     |acc, (idx, sky)|
-                        acc.add(widget::button::text(&sky.backgroundtex.name).on_press(
-                            Message::SelectSky(Some(idx))
-                        ))
+                        acc.add(widget::button::text(&sky.backgroundtex.name)
+                            .on_press(Message::SelectSky(Some(idx)))
+                            .width(Length::Fill)
+                            .class(match self.skydefs_index {
+                                SkydefsIndex::Sky(i) if i == idx => widget::button::ButtonClass::Suggested,
+                                _ => widget::button::ButtonClass::Text
+                            }))
                 ));
             let flatmapping_list = flatmapping.as_ref().map_or(
                 widget::list_column(),
                 |s| s.iter().enumerate().fold(
                     widget::list_column(),
                     |acc, (idx, mapping)|
-                        acc.add(widget::button::text(&mapping.flat).on_press(
-                            Message::SelectFlatmapping(Some(idx))
-                        ))
+                        acc.add(widget::button::text(&mapping.flat)
+                            .on_press(Message::SelectFlatmapping(Some(idx)))
+                            .width(Length::Fill)
+                            .class(match self.skydefs_index {
+                                SkydefsIndex::Flatmapping(i) if i == idx => widget::button::ButtonClass::Suggested,
+                                _ => widget::button::ButtonClass::Text
+                            }))
                 ));
             let content = widget::row::with_children(vec![
                 widget::container(properties_list)

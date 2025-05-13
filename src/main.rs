@@ -4,7 +4,7 @@ mod id24json;
 mod pages;
 mod widgets;
 
-use id24json::{ID24Json, ID24JsonData, skydefs};
+use id24json::{ID24Json, ID24JsonData};
 
 use std::fmt::{Display, Formatter};
 use std::collections::HashMap;
@@ -20,6 +20,9 @@ use strum::{IntoEnumIterator, VariantArray};
 use crate::widgets::aligned_row;
 // TODO: figure out how to bundle icons on windows/mac
 // maybe make a pr to libcosmic for that
+
+// TODO: write rust port of MTrop's DoomStruct or something like it, existing options are unmaintained and too unfinished
+// focus first on the subset that will allow extracting the assets needed for more graphical editors and verifying that lumps referenced in json exist
 
 // TODO: clean up module structure and imports, dont really want super long qualified names but need to avoid clashes too
 
