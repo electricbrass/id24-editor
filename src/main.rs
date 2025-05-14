@@ -105,7 +105,6 @@ struct EditorModel {
     key_binds: HashMap<KeyBind, MyMenuAction>,
     nav: nav_bar::Model,
     nav_ids: HashMap<LumpType, nav_bar::Id>,
-    text_content: widget::text_editor::Content,
     toasts: widget::Toasts<Message>,
     error_status: Option<String>,
     current_file: Option<url::Url>,
@@ -120,7 +119,6 @@ enum Message {
     // TODO: split each editor into its own module with its own message type
     GameconfMessage(pages::gameconf::Message),
     SkydefsMessage(pages::skydefs::Message),
-    EditText(widget::text_editor::Action),
     InitJSON(LumpType),
     LoadJSON(Box<ID24Json>),
     CloseToast(widget::ToastId),
@@ -194,7 +192,6 @@ impl cosmic::Application for EditorModel {
                 (KeyBind { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: Key::Character("s".into()) }, MyMenuAction::SaveAs),
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("q".into()) }, MyMenuAction::Quit),
             ]),
-            text_content: widget::text_editor::Content::new(),
             toasts: widget::Toasts::new(Message::CloseToast),
             error_status: None,
             current_file: None,
@@ -371,8 +368,7 @@ impl cosmic::Application for EditorModel {
                         return self.update(action.message());
                     }
                 }
-            }
-            Message::EditText(action) => self.text_content.perform(action),
+            },
             Message::CloseToast(id) => self.toasts.remove(id),
             Message::Error(e) => self.error_status = Some(e),
             Message::CloseError => self.error_status = None,

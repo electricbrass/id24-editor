@@ -18,10 +18,7 @@ pub enum Message {
 
 #[derive(Default)]
 pub struct Page {
-    // TODO: figure out if each page that needs a text editor should have its own
-    // or if there should be a single one shared by all
-    // i don't know how much resources are used by these things
-    // also need to figure out how to actually get the content written to the json struct
+    // TODO: figure out how to actually get the content written to the json struct
     description_content: widget::text_editor::Content,
 }
 
