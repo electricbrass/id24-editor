@@ -161,34 +161,30 @@ impl ID24JsonData {
         }
     }
 
+    // TODO: this seems like maybe not the best way?
+    fn check_duplicates<T, F>(items: Option<&Vec<T>>, get_name: F, item_type: &str) -> Result<(), String>
+    where F: Fn(&T) -> &str
+    {
+        if let Some(items) = items {
+            let mut seen = std::collections::HashSet::new();
+            if let Some(duplicate) = items.iter()
+                .map(get_name)
+                .find(|name| !seen.insert(name.to_owned()))
+            {
+                return Err(format!(
+                    "Duplicate {item_type} name '{duplicate}'"
+                ));
+            }
+
+        }
+        Ok(())
+    }
+
     pub fn verify(&self) -> Result<(), String> {
         match self {
             Self::SKYDEFS { skies, flatmapping } => {
-                // TODO: this seems like maybe not the best way
-                if let Some(skies) = skies {
-                    let mut names = std::collections::HashMap::new();
-                    for (idx, sky) in skies.iter().enumerate() {
-                        if names.insert(&sky.backgroundtex.name, idx).is_some() {
-                            return Err(format!(
-                                "Duplicate sky texture name '{}'",
-                                sky.backgroundtex.name
-                            ));
-                        }
-                    }
-                }
-
-                if let Some(flatmapping) = flatmapping {
-                    let mut names = std::collections::HashMap::new();
-                    for (idx, flatmapping) in flatmapping.iter().enumerate() {
-                        if names.insert(&flatmapping.flat, idx).is_some() {
-                            return Err(format!(
-                                "Duplicate sky flat '{}'",
-                                flatmapping.flat
-                            ));
-                        }
-                    }
-                }
-
+                Self::check_duplicates(skies.as_ref(), |sky| &sky.backgroundtex.name, "sky texture")?;
+                Self::check_duplicates(flatmapping.as_ref(), |mapping| &mapping.flat, "sky flat")?;
                 Ok(())
             }
             _ => Ok(())
