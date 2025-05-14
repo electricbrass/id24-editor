@@ -15,10 +15,10 @@ Preinstalled
 Fedora 42 or later:\
 `dnf install cosmic-icon-theme`
 
-Everything else:
+Everything else:\
+Install [casey/just]
 ```sh
-cargo install just
 git clone https://github.com/pop-os/cosmic-icons
 cd cosmic-icons
-just install
+sudo just install
 ```
