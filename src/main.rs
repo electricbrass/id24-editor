@@ -26,6 +26,9 @@ use crate::widgets::aligned_row;
 
 // TODO: clean up module structure and imports, dont really want super long qualified names but need to avoid clashes too
 
+// TODO: add WAD/PK3 setting in settings page, in WAD mode force all lump fields to 8 characters max and uppercase
+// make it persist between sessions, but override it if the user loads from a WAD/PK3 (currently loading from json files directly is all that's supported)
+
 fn main() -> cosmic::iced::Result {
     let settings = cosmic::app::Settings::default();
     cosmic::app::run::<EditorModel>(settings, ())
@@ -303,6 +306,11 @@ impl cosmic::Application for EditorModel {
                 });
             },
             Message::Save(url) => {
+                // TODO: probably should stop the user from doing invalid things sooner
+                if let Err(why) = self.json.data.verify() {
+                    // TODO: this should probably be a popup that is required to be dismissed
+                    return self.update(Message::Error(format!("Failed to verify JSON: {why}")));
+                }
                 // TODO: maybe move this into Save As somehow, dont need to be setting it every time we save
                 // and/or make a message just for this. would need to figure out how to send multiple messages from Open
                 self.current_file = Some(url.clone());
@@ -326,7 +334,7 @@ impl cosmic::Application for EditorModel {
                     };
 
                     if let Err(why) = serde_json::to_writer_pretty(&mut file, &self.json) {
-                        return Message::Error(format!("Failed to parse JSON: {why}"));
+                        return Message::Error(format!("Failed to write JSON: {why}"));
                     };
 
                     Message::Dummy

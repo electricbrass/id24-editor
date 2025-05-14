@@ -160,6 +160,40 @@ impl ID24JsonData {
             flatmapping: None
         }
     }
+
+    pub fn verify(&self) -> Result<(), String> {
+        match self {
+            Self::SKYDEFS { skies, flatmapping } => {
+                // TODO: this seems like maybe not the best way
+                if let Some(skies) = skies {
+                    let mut names = std::collections::HashMap::new();
+                    for (idx, sky) in skies.iter().enumerate() {
+                        if names.insert(&sky.backgroundtex.name, idx).is_some() {
+                            return Err(format!(
+                                "Duplicate sky texture name '{}'",
+                                sky.backgroundtex.name
+                            ));
+                        }
+                    }
+                }
+
+                if let Some(flatmapping) = flatmapping {
+                    let mut names = std::collections::HashMap::new();
+                    for (idx, flatmapping) in flatmapping.iter().enumerate() {
+                        if names.insert(&flatmapping.flat, idx).is_some() {
+                            return Err(format!(
+                                "Duplicate sky flat '{}'",
+                                flatmapping.flat
+                            ));
+                        }
+                    }
+                }
+
+                Ok(())
+            }
+            _ => Ok(())
+        }
+    }
 }
 
 impl Default for ID24Json {
