@@ -1,7 +1,7 @@
 use cosmic::prelude::*;
 use cosmic::iced::Length;
 use cosmic::widget;
-use strum::{IntoEnumIterator, VariantArray};
+use strum::VariantArray;
 use crate::id24json::{skydefs, ID24Json, ID24JsonData};
 use crate::id24json::skydefs::{Fire, Sky, SkyTex, SkyType};
 use crate::widgets::aligned_row;
@@ -124,6 +124,8 @@ impl Page {
                             Message::ChangeFireSpeed
                         );
                         properties_list.push(aligned_row("Animation Speed (seconds):", time_spin));
+                        // TODO: figure out how this should even work in the gui and add a preview for fire skies
+                        // what palette to use for when loading from standalone json? this is a time where making this part of slade wouldve been nice
                         properties_list.push(aligned_row("Palette:", widget::text::heading("coming soon")));
                     }
                     _ => ()

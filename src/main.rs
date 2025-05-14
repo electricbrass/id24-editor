@@ -12,12 +12,12 @@ use cosmic::widget;
 use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::iced::keyboard::{Key, Modifiers};
-use cosmic::iced::{event, keyboard, Alignment, Length, Subscription};
+use cosmic::iced::{event, keyboard, Length, Subscription};
 
 use cosmic::prelude::*;
 use cosmic::widget::menu::{Action, ItemWidth};
-use strum::{IntoEnumIterator, VariantArray};
-use crate::widgets::aligned_row;
+use strum::IntoEnumIterator;
+
 // TODO: figure out how to bundle icons on windows/mac
 // maybe make a pr to libcosmic for that
 
@@ -110,12 +110,15 @@ struct EditorModel {
     error_status: Option<String>,
     current_file: Option<url::Url>,
     json: ID24Json,
+    // TODO: should these be optional and be None when not active?
     skydefs_page: pages::skydefs::Page,
+    gameconf_page: pages::gameconf::Page,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     // TODO: split each editor into its own module with its own message type
+    GameconfMessage(pages::gameconf::Message),
     SkydefsMessage(pages::skydefs::Message),
     EditText(widget::text_editor::Action),
     InitJSON(LumpType),
@@ -186,8 +189,6 @@ impl cosmic::Application for EditorModel {
             nav,
             nav_ids,
             key_binds: HashMap::from([
-                // TODO: handle keyboard events so the keybinds actually do anything
-                // see cosmic-edit for an example
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("o".into()) }, MyMenuAction::Open),
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("s".into()) }, MyMenuAction::Save),
                 (KeyBind { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: Key::Character("s".into()) }, MyMenuAction::SaveAs),
@@ -198,6 +199,7 @@ impl cosmic::Application for EditorModel {
             error_status: None,
             current_file: None,
             json: ID24Json::default(),
+            gameconf_page: pages::gameconf::Page::default(),
             skydefs_page: pages::skydefs::Page::default(),
         };
         app.set_header_title("ID24 JSON Editor".to_owned());
@@ -359,6 +361,10 @@ impl cosmic::Application for EditorModel {
                 // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
                 self.skydefs_page.update(&mut self.json, message);
             },
+            Message::GameconfMessage(message) => {
+                // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
+                self.gameconf_page.update(&mut self.json, message);
+            },
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in &self.key_binds {
                     if key_bind.matches(modifiers, &key) {
@@ -384,57 +390,7 @@ impl cosmic::Application for EditorModel {
         }
         let main_content: Element<Self::Message> = match self.nav.active_data() {
             Some(LumpType::GAMECONF) => {
-                if let ID24JsonData::GAMECONF {
-                    title, author, version,
-                    iwad, pwadfiles, dehfiles,
-                    executable, mode, options,
-                    playertranslations, wadtranslation, ..
-                } = &self.json.data {
-                    let title_input = widget::text_input(
-                        "my cool wad",
-                        title.as_deref().unwrap_or(""))
-                        .on_input(|s| Message::Dummy);
-                    let author_input = widget::text_input(
-                        "electricbrass",
-                        author.as_deref().unwrap_or(""))
-                        .on_input(|s| Message::Dummy);
-                    let version_input = widget::text_input(
-                        "1.0",
-                        version.as_deref().unwrap_or(""))
-                        .on_input(|s| Message::Dummy);
-                    let description_input = widget::text_editor(&self.text_content)
-                        .placeholder("a really awesome set of levels")
-                        .on_action(Message::EditText);
-                    let exe_pick = cosmic::iced::widget::pick_list(
-                        id24json::gameconf::Executable::VARIANTS,
-                        executable.as_ref(),
-                        |e| Message::Dummy
-                    ).placeholder("None");
-                    let mode_pick = cosmic::iced::widget::pick_list(
-                        id24json::gameconf::Mode::VARIANTS,
-                        mode.as_ref(),
-                        |m| Message::Dummy
-                    ).placeholder("None");
-
-                    let list = widget::list_column()
-                        .add(aligned_row("Title:", title_input))
-                        .add(aligned_row("Author:", author_input))
-                        .add(aligned_row("Version:", version_input))
-                        .add(aligned_row("Description:", description_input))
-                        .add(aligned_row("Executable:", exe_pick))
-                        .add(aligned_row("Mode:", mode_pick));
-
-                    widget::container(list)
-                        .center_x(Length::Fill)
-                        .center_y(Length::Shrink)
-                        .into()
-                } else {
-                    // TODO: figure out a better way to handle this
-                    widget::container(widget::text::heading("You shouldn't be here."))
-                        .center_x(Length::Fill)
-                        .center_y(Length::Fill)
-                        .into()
-                }
+                self.gameconf_page.view(&self.json).map(Message::GameconfMessage)
             },
             Some(LumpType::SKYDEFS) => {
                 self.skydefs_page.view(&self.json).map(Message::SkydefsMessage)
