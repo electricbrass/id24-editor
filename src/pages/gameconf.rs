@@ -92,17 +92,22 @@ impl Page {
         match message {
             Message::UpdateTitle(t) => {
                 if let ID24JsonData::GAMECONF { title, .. } = &mut json.data {
-                    title.replace(t);
+                    *title = (!t.is_empty()).then_some(t);
                 }
             },
             Message::UpdateAuthor(a) => {
                 if let ID24JsonData::GAMECONF { author, .. } = &mut json.data {
-                    author.replace(a);
+                    *author = (!a.is_empty()).then_some(a);
                 }
             },
             Message::UpdateVersion(v) => {
                 if let ID24JsonData::GAMECONF { version, .. } = &mut json.data {
-                    version.replace(v);
+                    *version = (!v.is_empty()).then_some(v);
+                }
+            },
+            Message::UpdateIWAD(i) => {
+                if let ID24JsonData::GAMECONF { iwad, .. } = &mut json.data {
+                    *iwad = (!i.is_empty()).then_some(i);
                 }
             },
             Message::UpdateExe(e) => {
