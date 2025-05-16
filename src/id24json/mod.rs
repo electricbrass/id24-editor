@@ -26,7 +26,7 @@ pub enum ID24JsonData {
         wadtranslation: Option<String>, // same as above
         executable: Option<gameconf::Executable>,
         mode: Option<gameconf::Mode>,
-        options: Option<String> // TODO: make an actual type for the options
+        options: Option<gameconf::Options>
     },
     DEMOLOOP {
         #[serde(serialize_with = "serialize_vec_non_empty")]
