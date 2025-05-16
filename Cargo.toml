@@ -15,6 +15,6 @@ url = "2.5.4"
 
 [dependencies.libcosmic]
 git = "https://github.com/electricbrass/libcosmic"
-rev = "929aa1e" # change to an actual release version eventually
+rev = "b7aed0e" # change to an actual release version eventually
 default-features = false
 features = ["winit", "rfd", "tokio"]
