@@ -85,6 +85,8 @@ impl Page {
             let options_list = if let Some(options) = options {
                 options.into_iter()
                     .map(|(option, value)| {
+                        // TODO: add something to this widget that indicates an option is/is not the default value
+                        // disable that if exe == None
                         let (short, long) = option.description();
                         let row = widget::row()
                             .push(
@@ -209,8 +211,8 @@ impl Page {
                 self.new_option = Some(o);
             },
             Message::AddNewOption(o) => {
-                if let ID24JsonData::GAMECONF { options, .. } = &mut json.data {
-                    options.get_or_insert_with(Options::default).add_option(o);
+                if let ID24JsonData::GAMECONF { options, executable, .. } = &mut json.data {
+                    options.get_or_insert_with(Options::default).add_option(o, *executable);
                     self.new_option = None;
                 }
             },

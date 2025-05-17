@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::fmt::{Display, Formatter};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt::Write;
 use strum::IntoEnumIterator;
 
@@ -60,7 +60,7 @@ impl std::fmt::Display for Mode {
     strum_macros::EnumIter,
     strum_macros::EnumString,
     strum_macros::Display,
-    Debug, Clone, Copy, PartialEq, Eq, Hash
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord
 )]
 pub enum CompOption {
     // options available in doom1.9
@@ -105,7 +105,7 @@ pub enum CompOption {
     comp_stairs,
     comp_infcheat,
     comp_zerotags,
-    comp_respawn, // TODO: find out correct place for this
+    comp_respawn, // TODO: find out correct place for this, rnr says mbf21, doomwiki says mbf
     // options available in mbf21
     comp_ledgeblock,
     comp_friendlyspawn,
@@ -145,7 +145,7 @@ impl CompOption {
             Self::comp_ouchface |
             Self::comp_maxhealth |
             Self::comp_sound => Executable::MBF,
-            _ => Executable::ID24
+            _ => Executable::ID24 // TODO: make this always the highest, or maybe None?
         }
     }
 
@@ -154,18 +154,159 @@ impl CompOption {
             Self::comp_soul => ("Lost souls don't bounce off flat surfaces",
                                 "this is a longer description for the option that\n\
                                  might include information like the default value\n\
-                                 for the different executable levels"),
+                                 for the different executable levels\n\
+                                 this one should mention the difference between\n\
+                                 doom 1 and 2"
+            ),
+            Self::comp_finaldoomteleport => ("Use Final Doom teleport behavior",
+                                "mention the z thing here"
+            ),
             _ => ("short", "long")
         }
     }
 
-    pub fn default_value(self) -> Option<OptionValue> {
-        Some(OptionValue::Bool(false))
+    #[allow(clippy::too_many_lines)]
+    pub fn default_value(self, exe: Option<Executable>) -> Option<OptionValue> {
+        match exe {
+            #[allow(clippy::match_same_arms)]
+            Some(Executable::Doom1_9) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+                _ => None
+            },
+            #[allow(clippy::match_same_arms)]
+            Some(Executable::LimitRemoving | Executable::Bugfixed) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+
+                Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::All)),
+                Self::comp_clipmasked        => Some(OptionValue::ClipMasked(ClipMasked::None)),
+                _ => None
+            },
+            #[allow(clippy::match_same_arms)]
+            Some(Executable::Boom2_02) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+                Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::All)),
+                Self::comp_clipmasked        => Some(OptionValue::ClipMasked(ClipMasked::MultipatchOnly)),
+
+                Self::comp_thingfloorlight   => Some(OptionValue::Bool(false)),
+                _ => None
+            },
+            #[allow(clippy::match_same_arms)]
+            Some(Executable::CompLevel9) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+                Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::SolidWallsOnly)),
+                Self::comp_clipmasked        => Some(OptionValue::ClipMasked(ClipMasked::All)),
+                Self::comp_thingfloorlight   => Some(OptionValue::Bool(true)),
+
+                Self::comp_musinfo           => Some(OptionValue::Bool(true)),
+                _ => None
+            },
+            #[allow(clippy::match_same_arms)]
+            Some(Executable::MBF) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+                Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::SolidWallsOnly)),
+                Self::comp_clipmasked        => Some(OptionValue::ClipMasked(ClipMasked::All)),
+                Self::comp_thingfloorlight   => Some(OptionValue::Bool(true)),
+                Self::comp_musinfo           => Some(OptionValue::Bool(true)),
+
+                Self::weapon_recoil          => Some(OptionValue::Bool(false)), // TODO: rnr has this as true for mbf, but doomwiki says false is the default
+                Self::monsters_remember      => Some(OptionValue::Bool(true)),
+                Self::monster_infighting     => Some(OptionValue::Bool(true)),
+                Self::monster_backing        => Some(OptionValue::Bool(false)),
+                Self::monster_avoid_hazards  => Some(OptionValue::Bool(true)),
+                Self::monkeys                => Some(OptionValue::Bool(false)),
+                Self::monster_friction       => Some(OptionValue::Bool(true)),
+                Self::help_friends           => Some(OptionValue::Bool(true)),
+                Self::player_helpers         => Some(OptionValue::Int(0)),
+                Self::friend_distance        => Some(OptionValue::Int(128)),
+                Self::dog_jumping            => Some(OptionValue::Bool(true)),
+                Self::comp_telefrag          => Some(OptionValue::Bool(false)),
+                Self::comp_dropoff           => Some(OptionValue::Bool(false)),
+                Self::comp_vile              => Some(OptionValue::Bool(false)),
+                Self::comp_pain              => Some(OptionValue::Bool(false)),
+                Self::comp_skull             => Some(OptionValue::Bool(false)),
+                Self::comp_blazing           => Some(OptionValue::Bool(false)),
+                Self::comp_doorlight         => Some(OptionValue::Bool(false)),
+                Self::comp_model             => Some(OptionValue::Bool(false)),
+                Self::comp_god               => Some(OptionValue::Bool(false)),
+                Self::comp_falloff           => Some(OptionValue::Bool(false)),
+                Self::comp_floors            => Some(OptionValue::Bool(false)),
+                Self::comp_skymap            => Some(OptionValue::Bool(false)),
+                Self::comp_pursuit           => Some(OptionValue::Bool(true)),
+                Self::comp_doorstuck         => Some(OptionValue::Bool(false)),
+                Self::comp_staylift          => Some(OptionValue::Bool(false)),
+                Self::comp_zombie            => Some(OptionValue::Bool(false)),
+                Self::comp_stairs            => Some(OptionValue::Bool(true)),
+                Self::comp_infcheat          => Some(OptionValue::Bool(false)),
+                Self::comp_zerotags          => Some(OptionValue::Bool(false)),
+                Self::comp_respawn           => Some(OptionValue::Bool(false)), // TODO: find out if this exists for this complevel and the proper default
+
+                Self::comp_moveblock         => Some(OptionValue::Bool(true)),
+                Self::comp_666               => Some(OptionValue::Bool(false)),
+                Self::comp_maskedanim        => Some(OptionValue::Bool(true)),
+                Self::comp_ouchface          => Some(OptionValue::Bool(true)),
+                Self::comp_maxhealth         => Some(OptionValue::Bool(false)),
+                Self::comp_sound             => Some(OptionValue::Bool(true)),
+                _ => None
+            },
+            #[allow(clippy::match_same_arms)]
+            // TODO: make sure i'm not wrong in assuming these are the same for mbf21 and id24
+            Some(Executable::MBF21 | Executable::MBF21EX | Executable::ID24) => match self {
+                Self::comp_soul              => Some(OptionValue::Bool(false)),
+                Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
+                Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::SolidWallsOnly)),
+                Self::comp_clipmasked        => Some(OptionValue::ClipMasked(ClipMasked::All)),
+                Self::comp_thingfloorlight   => Some(OptionValue::Bool(true)),
+                Self::comp_musinfo           => Some(OptionValue::Bool(true)),
+                Self::weapon_recoil          => Some(OptionValue::Bool(false)), // TODO: rnr has this as true for mbf, but doomwiki says false is the default
+                Self::monsters_remember      => Some(OptionValue::Bool(true)),
+                Self::monster_infighting     => Some(OptionValue::Bool(true)),
+                Self::monster_backing        => Some(OptionValue::Bool(false)),
+                Self::monster_avoid_hazards  => Some(OptionValue::Bool(true)),
+                Self::monkeys                => Some(OptionValue::Bool(false)),
+                Self::monster_friction       => Some(OptionValue::Bool(true)),
+                Self::help_friends           => Some(OptionValue::Bool(false)),
+                Self::player_helpers         => Some(OptionValue::Int(0)),
+                Self::friend_distance        => Some(OptionValue::Int(128)),
+                Self::dog_jumping            => Some(OptionValue::Bool(true)),
+                Self::comp_telefrag          => Some(OptionValue::Bool(false)),
+                Self::comp_dropoff           => Some(OptionValue::Bool(false)),
+                Self::comp_vile              => Some(OptionValue::Bool(false)),
+                Self::comp_pain              => Some(OptionValue::Bool(false)),
+                Self::comp_skull             => Some(OptionValue::Bool(false)),
+                Self::comp_blazing           => Some(OptionValue::Bool(false)),
+                Self::comp_doorlight         => Some(OptionValue::Bool(false)),
+                Self::comp_model             => Some(OptionValue::Bool(false)),
+                Self::comp_god               => Some(OptionValue::Bool(false)),
+                Self::comp_falloff           => Some(OptionValue::Bool(false)),
+                Self::comp_floors            => Some(OptionValue::Bool(false)),
+                Self::comp_skymap            => Some(OptionValue::Bool(false)),
+                Self::comp_pursuit           => Some(OptionValue::Bool(true)),
+                Self::comp_doorstuck         => Some(OptionValue::Bool(false)),
+                Self::comp_staylift          => Some(OptionValue::Bool(false)),
+                Self::comp_zombie            => Some(OptionValue::Bool(true)),
+                Self::comp_stairs            => Some(OptionValue::Bool(false)),
+                Self::comp_infcheat          => Some(OptionValue::Bool(false)),
+                Self::comp_zerotags          => Some(OptionValue::Bool(false)),
+                Self::comp_respawn           => Some(OptionValue::Bool(false)),
+
+                Self::comp_ledgeblock        => Some(OptionValue::Bool(true)),
+                Self::comp_friendlyspawn     => Some(OptionValue::Bool(true)),
+                Self::comp_voodooscroller    => Some(OptionValue::Bool(false)),
+                Self::comp_reservedlineflag  => Some(OptionValue::Bool(true)),
+                _ => None
+            },
+            None => None // TODO: options are allowed with null executable, but what should the defaults be??
+        }
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, strum_macros::FromRepr, strum_macros::VariantArray)]
-#[repr(u8)]
+#[repr(u16)]
 pub enum ClipMasked {
     None           = 0,
     MultipatchOnly = 1,
@@ -183,7 +324,7 @@ impl Display for ClipMasked {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, strum_macros::FromRepr, strum_macros::VariantArray)]
-#[repr(u8)]
+#[repr(u16)]
 pub enum TexWidthClamp {
     All            = 0,
     SolidWallsOnly = 1,
@@ -203,7 +344,7 @@ impl Display for TexWidthClamp {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum OptionValue {
     Bool(bool),
-    Int(u8),
+    Int(u16),
     ClipMasked(ClipMasked),
     TexWidthClamp(TexWidthClamp)
 }
@@ -229,7 +370,8 @@ impl std::fmt::Display for OptionValue {
 
 #[derive(Clone, Default, Debug)]
 pub struct Options {
-    options: HashMap<CompOption, OptionValue>
+    // we want a consistent ordering of the keys
+    options: BTreeMap<CompOption, OptionValue>
 }
 
 impl PartialEq for Options {
@@ -247,8 +389,8 @@ impl Options {
         }
     }
 
-    pub fn add_option(&mut self, option: CompOption) {
-        if let Some(value) = option.default_value() {
+    pub fn add_option(&mut self, option: CompOption, exe: Option<Executable>) {
+        if let Some(value) = option.default_value(exe) {
             self.options.insert(option, value);
         }
     }
@@ -268,7 +410,7 @@ impl Options {
 
 impl<'a> IntoIterator for &'a Options {
     type Item = (&'a CompOption, &'a OptionValue);
-    type IntoIter = std::collections::hash_map::Iter<'a, CompOption, OptionValue>;
+    type IntoIter = std::collections::btree_map::Iter<'a, CompOption, OptionValue>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.options.iter()
@@ -303,7 +445,7 @@ impl<'a> serde::Deserialize<'a> for Options {
                 return Err(serde::de::Error::custom(format!("Invalid options line: {line}")));
             }
             if let (Some(opt), Some(value)) = (parts.next(), parts.next()) {
-                let value: u8 = value.parse().map_err(serde::de::Error::custom)?;
+                let value: u16 = value.parse().map_err(serde::de::Error::custom)?;
                 match opt {
                     "comp_texwidthclamp" => {
                         options.options.insert(
@@ -334,7 +476,7 @@ impl<'a> serde::Deserialize<'a> for Options {
                         options.options.insert(
                             CompOption::friend_distance,
                             // TODO: check these ranges
-                            OptionValue::Int(value.clamp(0, 128))
+                            OptionValue::Int(value.clamp(0, 999))
                         );
                     },
                     _ => { 
