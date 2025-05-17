@@ -145,8 +145,7 @@ impl cosmic::Application for EditorModel {
     type Executor = cosmic::executor::Default;
     type Flags = ();
     type Message = Message;
-    // TODO: make a real app id
-    const APP_ID: &'static str = "placeholder_appid";
+    const APP_ID: &'static str = "io.github.electricbrass.id24-editor";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -154,18 +153,6 @@ impl cosmic::Application for EditorModel {
 
     fn core_mut(&mut self) -> &mut cosmic::Core {
         &mut self.core
-    }
-
-    fn subscription(&self) -> Subscription<Self::Message> {
-        event::listen_with(|event, status, _window_id| match event {
-            event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
-                match status {
-                    event::Status::Ignored => Some(Message::Key(modifiers, key)),
-                    event::Status::Captured => None,
-                }
-            }
-            _ => None,
-        })
     }
 
     fn init(core: cosmic::Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
@@ -233,6 +220,18 @@ impl cosmic::Application for EditorModel {
             return self.update(Message::InitJSON(*lump));
         }
         Task::none()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        event::listen_with(|event, status, _window_id| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
+                match status {
+                    event::Status::Ignored => Some(Message::Key(modifiers, key)),
+                    event::Status::Captured => None,
+                }
+            }
+            _ => None,
+        })
     }
 
     #[allow(clippy::too_many_lines)]
@@ -392,7 +391,7 @@ impl cosmic::Application for EditorModel {
                 self.skydefs_page.view(&self.json).map(Message::SkydefsMessage)
             },
             _ => {
-                widget::container(widget::text::title3("<---- Select a lump type"))
+                widget::container(widget::text::title3("⇐ Select a lump type"))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
                     .into()

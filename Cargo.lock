@@ -2354,7 +2354,7 @@ dependencies = [
 
 [[package]]
 name = "id24-editor"
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 dependencies = [
  "env_logger",
  "libcosmic",

@@ -1,6 +1,7 @@
 [package]
 name = "id24-editor"
-version = "0.1.0"
+repository = "https://github.com/electricbrass/id24-editor"
+version = "0.1.0-alpha.0"
 license = "GPL-3"
 edition = "2024"
 
