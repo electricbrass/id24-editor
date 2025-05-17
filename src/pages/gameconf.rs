@@ -108,7 +108,7 @@ impl Page {
                             OptionValue::Int(i) => row.push(
                                 widget::spin_button(
                                     i.to_string(), *i,
-                                    1, 0, 3, // TODO: get these values from somewhere
+                                    1, 0, if *option == CompOption::player_helpers {3} else {999}, // TODO: don't just hardcode this here
                                     {
                                         let option = *option;
                                         move |i| Message::SetOption(option, OptionValue::Int(i))
