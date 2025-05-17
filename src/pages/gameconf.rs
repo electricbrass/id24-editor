@@ -91,10 +91,11 @@ impl Page {
                                 widget::button::text("Delete")
                                     .on_press(Message::RemoveOption(*option))
                             )
+                            .push(widget::horizontal_space().width(20))
                             .push(widget::tooltip(
                                 widget::text::heading(short), long,
-                                widget::tooltip::Position::FollowCursor
-                            ))
+                                widget::tooltip::Position::Top
+                            ).padding(20).gap(3))
                             .push(widget::horizontal_space())
                             .align_y(Alignment::Center);
                         match value {
@@ -142,21 +143,22 @@ impl Page {
                 .add(aligned_row("IWAD File:", iwad_input))
                 .add(aligned_row("Executable:", exe_pick))
                 .add(aligned_row("Mode:", mode_pick))
-                .add(widget::row()
-                    .push(widget::text::heading("Options:"))
-                    .push(widget::horizontal_space())
-                    .push(
-                        widget::button::text("Add Option")
-                            .on_press_maybe(self.new_option.map(Message::AddNewOption))
-                    )
-                    .push(option_pick)
-                    .align_y(Alignment::Center));
+                .add(widget::column()
+                    .push(widget::row()
+                        .push(widget::text::heading("Options:"))
+                        .push(widget::horizontal_space())
+                        .push(
+                            widget::button::text("Add Option")
+                                .on_press_maybe(self.new_option.map(Message::AddNewOption))
+                        )
+                        .push(option_pick)
+                        .align_y(Alignment::Center))
+                    // TODO: make the options list collapsable
+                    .push(options_list
+                      .into_iter()
+                      .fold(widget::list_column(), widget::ListColumn::add)));
 
-            let list = options_list
-                .into_iter()
-                .fold(list, widget::ListColumn::add);
-
-            widget::container(list)
+            widget::container(widget::scrollable(list))
                 .center_x(Length::Fill)
                 .center_y(Length::Shrink)
                 .into()

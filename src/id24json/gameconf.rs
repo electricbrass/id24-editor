@@ -150,7 +150,13 @@ impl CompOption {
     }
 
     pub fn description(self) -> (&'static str, &'static str) {
-        ("short", "long")
+        match self {
+            Self::comp_soul => ("Lost souls don't bounce off flat surfaces",
+                                "this is a longer description for the option that\n\
+                                 might include information like the default value\n\
+                                 for the different executable levels"),
+            _ => ("short", "long")
+        }
     }
 
     pub fn default_value(self) -> Option<OptionValue> {
