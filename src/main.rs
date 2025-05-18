@@ -3,12 +3,14 @@
 mod id24json;
 mod pages;
 mod widgets;
+mod config;
 
 use id24json::{ID24Json, ID24JsonData};
 
 use std::fmt::{Display, Formatter};
 use std::collections::HashMap;
-use cosmic::widget;
+use cosmic::{widget, Application};
+use cosmic::cosmic_config::{self, CosmicConfigEntry};
 use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::iced::keyboard::{Key, Modifiers};
@@ -17,6 +19,8 @@ use cosmic::iced::{event, keyboard, Length, Subscription};
 use cosmic::prelude::*;
 use cosmic::widget::menu::{Action, ItemWidth};
 use strum::IntoEnumIterator;
+
+// TODO: figure out if a context page is how the different editors should be shown
 
 // TODO: figure out how to bundle icons on windows/mac
 // maybe make a pr to libcosmic for that
@@ -29,9 +33,29 @@ use strum::IntoEnumIterator;
 // TODO: add WAD/PK3 setting in settings page, in WAD mode force all lump fields to 8 characters max and uppercase
 // make it persist between sessions, but override it if the user loads from a WAD/PK3 (currently loading from json files directly is all that's supported)
 
+struct Flags {
+    config: config::Config,
+    config_handler: Option<cosmic_config::Config>
+}
+
+// TODO: add cli options for loading files and maybe doing a couple other things
 fn main() -> cosmic::iced::Result {
     let settings = cosmic::app::Settings::default();
-    cosmic::app::run::<EditorModel>(settings, ())
+    let (config, config_handler) = match cosmic_config::Config::new(EditorModel::APP_ID, config::Config::VERSION) {
+        Ok(config_handler) => {
+            let config = config::Config::get_entry(&config_handler).unwrap_or_else(|(errs, config)| {
+                println!("errors loading config: {errs:?}");
+                config
+            });
+            (config, Some(config_handler))
+        },
+        Err(err) => {
+            println!("failed to create config handler: {err}");
+            (config::Config::default(), None)
+        }
+    };
+    let flags = Flags { config, config_handler };
+    cosmic::app::run::<EditorModel>(settings, flags)
 }
 
 #[derive(strum_macros::EnumIter, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -106,6 +130,8 @@ struct EditorModel {
     nav: nav_bar::Model,
     nav_ids: HashMap<LumpType, nav_bar::Id>,
     toasts: widget::Toasts<Message>,
+    config: config::Config,
+    config_handler: Option<cosmic_config::Config>,
     error_status: Option<String>,
     current_file: Option<url::Url>,
     json: ID24Json,
@@ -143,7 +169,7 @@ impl From<pages::skydefs::Message> for Message {
 
 impl cosmic::Application for EditorModel {
     type Executor = cosmic::executor::Default;
-    type Flags = ();
+    type Flags = Flags;
     type Message = Message;
     const APP_ID: &'static str = "io.github.electricbrass.id24-editor";
 
@@ -180,6 +206,8 @@ impl cosmic::Application for EditorModel {
                 (KeyBind { modifiers: vec![Modifier::Ctrl], key: Key::Character("q".into()) }, MyMenuAction::Quit),
             ]),
             toasts: widget::Toasts::new(Message::CloseToast),
+            config: flags.config,
+            config_handler: flags.config_handler,
             error_status: None,
             current_file: None,
             json: ID24Json::default(),
