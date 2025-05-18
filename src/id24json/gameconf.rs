@@ -149,22 +149,6 @@ impl CompOption {
         }
     }
 
-    pub fn description(self) -> (&'static str, &'static str) {
-        match self {
-            Self::comp_soul => ("Lost souls don't bounce off flat surfaces",
-                                "this is a longer description for the option that\n\
-                                 might include information like the default value\n\
-                                 for the different executable levels\n\
-                                 this one should mention the difference between\n\
-                                 doom 1 and 2"
-            ),
-            Self::comp_finaldoomteleport => ("Use Final Doom teleport behavior",
-                                "mention the z thing here"
-            ),
-            _ => ("short", "long")
-        }
-    }
-
     #[allow(clippy::too_many_lines)]
     pub fn default_value(self, exe: Option<Executable>) -> Option<OptionValue> {
         match exe {

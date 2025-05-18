@@ -82,6 +82,7 @@ impl Page {
                 Message::SetNewOption
             ).placeholder("None");
 
+            // TODO: this is slow when many options are being displayed, figure out what is the issue
             let options_list = if let Some(options) = options {
                 options.into_iter()
                     .map(|(option, value)| {
@@ -230,5 +231,215 @@ impl Page {
             _ => ()
         }
         Task::none()
+    }
+}
+
+impl CompOption {
+    // TODO: translate these (and all other text in the ui) into other languages
+    #[allow(clippy::too_many_lines)]
+    fn description(self) -> (&'static str, &'static str) {
+        match self {
+            Self::comp_soul => (
+                "Lost souls don't bounce off flat surfaces",
+                "this is a longer description for the option that\n\
+                 might include information like the default value\n\
+                 for the different executable levels\n\
+                 this one should mention the difference between\n\
+                 doom 1 and 2"
+            ),
+            Self::comp_finaldoomteleport => (
+                "Use Final Doom teleport behavior",
+                "mention the z thing here"
+            ),
+            Self::comp_texwidthclamp => (
+                "Clamp texture widths to powers of 2",
+                "Non-power of 2 texture widths will be\n\
+                 rounded down to the nearest power of 2"
+            ),
+            Self::comp_clipmasked => (
+                "Clip 2-sided middle textures",
+                "lorem ipsum"
+            ),
+            Self::comp_thingfloorlight => (
+                "Light things based on floor lighting",
+                "If enabled, things are affected by floor\n\
+                 light transfers. If disabled, things are\n\
+                 always lit by the sector light."
+            ),
+            Self::comp_musinfo => (
+                "Enable MUSINFO",
+                "lorem ipsum"
+            ),
+            Self::comp_moveblock => (
+                "Use vanilla movement clipping code",
+                "Effects of this include mancubus\n\
+                 fireballs clipping through some walls"
+            ),
+            Self::weapon_recoil => (
+                "Push player back when firing weapons",
+                "lorem ipsum"
+            ),
+            Self::monsters_remember => (
+                "friendly monsters remember targets idk",
+                "lorem ipsum"
+            ),
+            Self::monster_infighting => (
+                "Enable monster infighting",
+                "lorem ipsum"
+            ),
+            Self::monster_backing => (
+                "Ranged monsters back away from melee targets",
+                "lorem ipsum"
+            ),
+            Self::monster_avoid_hazards => (
+                "Monsters avoid environmental hazards",
+                "this includes crushing ceilings,\n\
+                 but what about damaging sectors? idk"
+            ),
+            Self::monkeys => (
+                "Monsters can climb steep stairs",
+                "banana heehoo"
+            ),
+            Self::monster_friction => (
+                "make friction affect monsters",
+                "lorem ipsum"
+            ),
+            Self::help_friends => (
+                "monsters help dying friends",
+                "lorem ipsum"
+            ),
+            Self::player_helpers => (
+                "# of helper dogs",
+                "woof woof"
+            ),
+            Self::friend_distance => (
+                "friend distance",
+                "units are map units i'd assume"
+            ),
+            Self::dog_jumping => (
+                "Allow helper dogs to jump from high ledges",
+                "woof woof"
+            ),
+            Self::comp_telefrag => (
+                "Allow all monsters to telefrag on MAP30",
+                "lorem ipsum"
+            ),
+            Self::comp_dropoff => (
+                "Prevent enemies from walking off ledges",
+                "deprecated in favor of comp_ledgeblock?"
+            ),
+            Self::comp_vile => (
+                "Allow Arch-viles to create ghosts",
+                "lorem ipsum"
+            ),
+            Self::comp_pain => (
+                "Prevent Pain Elementals from spawning over the Lost Soul limit",
+                "lorem ipsum"
+            ),
+            Self::comp_skull => (
+                "Allow lost souls to spawn past impassable lines",
+                "lorem ipsum"
+            ),
+            Self::comp_blazing => (
+                "blazing door double sounds",
+                "lorem ipsum"
+            ),
+            Self::comp_doorlight => (
+                "abrupt door lighting changes?",
+                "what does this even mean"
+            ),
+            Self::comp_model => (
+                "Use vanilla linedef trigger model",
+                "what behavior does this result in?"
+            ),
+            Self::comp_god => (
+                "Use vanilla IDDQD behavior",
+                "God mode is disabled if the player\n\
+                 enters a sector with special 11.\n\
+                 Damage over 1000 is not prevented."
+            ),
+            Self::comp_falloff => (
+                "dont pull hanging monsters off ledges",
+                "lorem ipsum"
+            ),
+            Self::comp_floors => (
+                "Use vanilla floor movement",
+                "Moving sectors are block when\n\
+                 containing things that touch walls\n\
+                 or ceilings"
+            ),
+            Self::comp_skymap => (
+                "Don't apply invulnerability affect to skies",
+                "lorem ipsum"
+            ),
+            Self::comp_pursuit => (
+                "monsters can infight immediately",
+                "disable the annoying mbf thing"
+            ),
+            Self::comp_doorstuck => (
+                "monsters get stuck on door tracks",
+                "lorem ipsum"
+            ),
+            Self::comp_staylift => (
+                "monsters randomly walk off lifts their target is on",
+                "disable to keep them staying on the lifts"
+            ),
+            Self::comp_zombie => (
+                "Allow dead players to activate linedefs",
+                "lorem ipsum"
+            ),
+            Self::comp_stairs => (
+                "use vanilla stairbuilder bugs i think?",
+                "lorem ipsum"
+            ),
+            Self::comp_infcheat => (
+                "Infinite duration for IDBEHOLD powerups",
+                "makes em toggleable :)"
+            ),
+            Self::comp_zerotags => (
+                "Allow linedef actions with tag 0",
+                "lorem ipsum"
+            ),
+            Self::comp_respawn => (
+                "Respawn icon of sin monsters at 0,0",
+                "lorem ipsum"
+            ),
+            Self::comp_ledgeblock => (
+                "monsters are blocked by ledges except when scrolling",
+                "lorem ipsum"
+            ),
+            Self::comp_friendlyspawn => (
+                "spawned things inherit friendly flag",
+                "lorem ipsum"
+            ),
+            Self::comp_voodooscroller => (
+                "smth about voodoo doll scroll speed",
+                "lorem ipsum"
+            ),
+            Self::comp_reservedlineflag => (
+                "line flag 0x0800 disabled extended flags",
+                "wtf does this mean"
+            ),
+            Self::comp_666 => (
+                "Use pre-Ultimate Doom boss death checks",
+                "lorem ipsum"
+            ),
+            Self::comp_maskedanim => (
+                "Disable animations for 2-sided midtextures",
+                "Doom v1.666 behavior?"
+            ),
+            Self::comp_ouchface => (
+                "Use vanilla OUCHFACE behavior",
+                "why does anyone care"
+            ),
+            Self::comp_maxhealth => (
+                "Only apply DeHackEd \"Max Health\" to health bonuses",
+                "lorem ipsum"
+            ),
+            Self::comp_sound => (
+                "use sound errors?",
+                "lorem ipsum"
+            ),
+        }
     }
 }

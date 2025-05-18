@@ -7,6 +7,8 @@ struct SelectList {
 // all we really need is something that works like the current list but with better styling
 // and a way to set a specific button to display as selected
 
+// i think now this can probable be done away with, i think the updated solution is good enough now
+
 impl SelectList {
     fn on_select() {
         
