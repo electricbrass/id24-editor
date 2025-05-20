@@ -8,7 +8,9 @@ use crate::widgets::aligned_row;
 #[derive(Debug, Clone)]
 pub enum Message {
     UpdateExe(Executable),
+    ClearExe,
     UpdateMode(Mode),
+    ClearMode,
     UpdateTitle(String),
     UpdateAuthor(String),
     UpdateVersion(String),
@@ -87,8 +89,6 @@ impl Page {
             let options_list = if let Some(options) = options {
                 options.into_iter()
                     .map(|(option, value)| {
-                        // TODO: add something to this widget that indicates an option is/is not the default value
-                        // disable that if exe == None
                         let (short, long) = option.description();
                         let row = widget::row()
                             .push(
@@ -102,7 +102,7 @@ impl Page {
                             ).padding(20).gap(3))
                             .push(widget::horizontal_space())
                             .align_y(Alignment::Center);
-                        match value {
+                        let row = match value {
                             OptionValue::Bool(b) => row.push(
                                 widget::toggler(*b)
                                     .on_toggle(|b| Message::SetOption(*option, OptionValue::Bool(b)))
@@ -131,7 +131,29 @@ impl Page {
                                     |c| Message::SetOption(*option, OptionValue::ClipMasked(c))
                                 )
                             )
-                        }
+                        };
+                        let default_indicator = {
+                            // TODO: should this indicate when option *is* or *is not* default
+                            let inner: Element<Message> =
+                                if executable.is_some() && Some(*value) == option.default_value(*executable) {
+                                    widget::tooltip(
+                                        widget::icon(widget::icon::from_svg_bytes(
+                                            include_bytes!("../../res/icons/red-circle.svg"))
+                                        ).size(12),
+                                        "Option not modified from default",
+                                        widget::tooltip::Position::Left
+                                    ).padding(10).into()
+                                } else {
+                                    widget::horizontal_space().into()
+                                };
+
+                            widget::container(inner)
+                                // TODO: figure out exactly what values are wanted here
+                                .width(Length::Fixed(20.0))
+                                .align_x(Alignment::End)
+                                .align_y(Alignment::Start)
+                        };
+                        row.push(default_indicator)
                     }).collect()
             } else {
                 Vec::new()
@@ -145,8 +167,12 @@ impl Page {
                 .add(aligned_row("Version:", version_input))
                 .add(aligned_row("Description:", description_input))
                 .add(aligned_row("IWAD File:", iwad_input))
-                .add(aligned_row("Executable:", exe_pick))
-                .add(aligned_row("Mode:", mode_pick))
+                .add(aligned_row("Executable:", exe_pick)
+                    .push(widget::button::text("Clear")
+                        .on_press(Message::ClearExe)))
+                .add(aligned_row("Mode:", mode_pick)
+                    .push(widget::button::text("Clear")
+                        .on_press(Message::ClearMode)))
                 .add(widget::column()
                     .push(widget::row()
                         .push(widget::text::heading("Options:"))
@@ -204,9 +230,19 @@ impl Page {
                     if let Some(o) = options { o.set_executable(e) }
                 }
             },
+            Message::ClearExe => {
+                if let ID24JsonData::GAMECONF { executable, .. } = &mut json.data {
+                    *executable = None;
+                }
+            },
             Message::UpdateMode(m) => {
                 if let ID24JsonData::GAMECONF { mode, .. } = &mut json.data {
                     *mode = Some(m);
+                }
+            },
+            Message::ClearMode => {
+                if let ID24JsonData::GAMECONF { mode, .. } = &mut json.data {
+                    *mode = None;
                 }
             },
             Message::SetNewOption(o) => {
