@@ -83,6 +83,7 @@ impl Page {
             ).placeholder("None");
 
             // TODO: this is slow when many options are being displayed, figure out what is the issue
+            // enabling wgpu fixes this but at least on windows it has a few issues of its own
             let options_list = if let Some(options) = options {
                 options.into_iter()
                     .map(|(option, value)| {
