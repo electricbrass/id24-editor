@@ -58,6 +58,7 @@ fn main() -> cosmic::iced::Result {
     cosmic::app::run::<EditorModel>(settings, flags)
 }
 
+// TODO: consider using std::mem::discriminant instead of this
 #[derive(strum_macros::EnumIter, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum LumpType {
     GAMECONF,
@@ -221,7 +222,9 @@ impl cosmic::Application for EditorModel {
 
     fn header_start(&self) -> Vec<Element<Self::Message>> {
         let menu_bar = menu::bar(vec![menu::Tree::with_children(
-            menu::root("File"),
+            widget::RcElementWrapper::new(Element::from(
+                menu::root("File"),
+            )),
             menu::items(
                 &self.key_binds,
                 vec![

@@ -16,6 +16,11 @@ url = "2.5.4"
 
 [dependencies.libcosmic]
 git = "https://github.com/electricbrass/libcosmic"
-rev = "a46483f" # change to an actual release version eventually
+rev = "50367b9" # change to an actual release version eventually
 default-features = false
 features = ["winit", "rfd", "tokio"]
+
+[features]
+default = ["wgpu"]
+debug = ["libcosmic/debug"]
+wgpu = ["libcosmic/wgpu"]
