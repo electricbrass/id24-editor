@@ -15,7 +15,6 @@ use cosmic::widget::{menu, nav_bar};
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::iced::keyboard::{Key, Modifiers};
 use cosmic::iced::{event, keyboard, Length, Subscription};
-
 use cosmic::prelude::*;
 use cosmic::widget::menu::{Action, ItemWidth};
 use strum::IntoEnumIterator;
@@ -168,6 +167,20 @@ impl From<pages::skydefs::Message> for Message {
     }
 }
 
+impl From<pages::gameconf::Message> for Message {
+    fn from(message: pages::gameconf::Message) -> Self {
+        Message::GameconfMessage(message)
+    }
+}
+
+fn convert_action_message<M, N: From<M>>(action: cosmic::Action<M>) -> cosmic::Action<N> {
+    match action {
+        cosmic::Action::None => cosmic::Action::None,
+        cosmic::Action::App(m) => cosmic::Action::App(m.into()),
+        cosmic::Action::Cosmic(a) => cosmic::Action::Cosmic(a),
+    }
+}
+
 impl cosmic::Application for EditorModel {
     type Executor = cosmic::executor::Default;
     type Flags = Flags;
@@ -267,7 +280,7 @@ impl cosmic::Application for EditorModel {
 
     #[allow(clippy::too_many_lines)]
     // TODO: split this up, just dont want it to yell at me for just a bit longer
-    fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> cosmic::Task<cosmic::Action<Self::Message>> {
         match message {
             Message::MenuOpen => {
                 return cosmic::task::future(async {
@@ -385,12 +398,10 @@ impl cosmic::Application for EditorModel {
                 self.nav.activate(*self.nav_ids.get(&(&self.json.data).into()).unwrap());
             },
             Message::SkydefsMessage(message) => {
-                // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
-                self.skydefs_page.update(&mut self.json, message);
+                return self.skydefs_page.update(&mut self.json, message).map(convert_action_message);
             },
             Message::GameconfMessage(message) => {
-                // TODO: address this warning, figure out why .map(Into::into) doesnt work like in the example
-                self.gameconf_page.update(&mut self.json, message);
+                return self.gameconf_page.update(&mut self.json, message).map(convert_action_message);
             },
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in &self.key_binds {

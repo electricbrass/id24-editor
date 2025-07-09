@@ -1,5 +1,5 @@
 use cosmic::iced::{Alignment, Length};
-use cosmic::{widget, Element, Task};
+use cosmic::{widget, Element, Task, Action};
 use strum::VariantArray;
 use crate::id24json::{ID24Json, ID24JsonData};
 use crate::id24json::gameconf::{Executable, Mode, Options, CompOption, OptionValue, TexWidthClamp, ClipMasked};
@@ -201,7 +201,7 @@ impl Page {
         }
     }
 
-    pub fn update(&mut self, json: &mut ID24Json, message: Message) -> Task<cosmic::Action<Message>> {
+    pub fn update(&mut self, json: &mut ID24Json, message: Message) -> Task<Action<Message>> {
         match message {
             Message::UpdateTitle(t) => {
                 if let ID24JsonData::GAMECONF { title, .. } = &mut json.data {
