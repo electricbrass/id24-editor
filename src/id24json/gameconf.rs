@@ -24,13 +24,11 @@ pub enum Executable {
     #[serde(rename = "doom1.9")]
     Doom1_9,
     LimitRemoving,
-    Bugfixed,
     #[serde(rename = "boom2.02")]
     Boom2_02,
     CompLevel9,
     MBF,
     MBF21,
-    MBF21EX,
     ID24
 }
 
@@ -39,12 +37,10 @@ impl std::fmt::Display for Executable {
         f.write_str(match self {
             Executable::Doom1_9       => "Vanilla",
             Executable::LimitRemoving => "Limit Removing",
-            Executable::Bugfixed      => "Bugfixed",
             Executable::Boom2_02      => "Boom 2.02",
             Executable::CompLevel9    => "Boom (CL9)",
             Executable::MBF           => "MBF",
             Executable::MBF21         => "MBF21",
-            Executable::MBF21EX       => "MBF21 + DSDHacked",
             Executable::ID24          => "ID24"
         })
     }
@@ -173,7 +169,7 @@ impl CompOption {
                 _ => None
             },
             #[allow(clippy::match_same_arms)]
-            Some(Executable::LimitRemoving | Executable::Bugfixed) => match self {
+            Some(Executable::LimitRemoving) => match self {
                 Self::comp_soul              => Some(OptionValue::Bool(false)),
                 Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
 
@@ -253,7 +249,7 @@ impl CompOption {
             },
             #[allow(clippy::match_same_arms)]
             // TODO: make sure i'm not wrong in assuming these are the same for mbf21 and id24
-            Some(Executable::MBF21 | Executable::MBF21EX | Executable::ID24) => match self {
+            Some(Executable::MBF21 | Executable::ID24) => match self {
                 Self::comp_soul              => Some(OptionValue::Bool(false)),
                 Self::comp_finaldoomteleport => Some(OptionValue::Bool(false)),
                 Self::comp_texwidthclamp     => Some(OptionValue::TexWidthClamp(TexWidthClamp::SolidWallsOnly)),
