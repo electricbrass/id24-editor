@@ -17,12 +17,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Install dependencies (Linux)
+    - name: Install dependencies
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt update && sudo apt install cargo cmake just libexpat1-dev libfontconfig-dev libfreetype-dev libxkbcommon-dev pkgconf
-    - name: Install dependencies (macOS)
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: brew update && brew install libxkbcommon
     - uses: actions/checkout@v4
     - name: Build
       run: cargo build --verbose
