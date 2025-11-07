@@ -51,6 +51,8 @@ pub enum Message {
     UpdateSkyTexPropFG(SkyTexMessage),
     ChangeSkyType(SkyType),
     ChangeFireSpeed(f32),
+    ChangeFlatmapFlat(String),
+    ChangeFlatmapSky(String),
     NewSky,
     NewFlatmapping,
     DeleteSky(usize),
@@ -147,9 +149,9 @@ impl Page {
             } else if let (Some(flatmapping), SkydefsIndex::Flatmapping(idx)) = (flatmapping, self.skydefs_index) {
                 let skydefs::FlatMapping { flat, sky } = &flatmapping[idx];
                 let flat_input = widget::text_input("F_SKY1", flat)
-                    .on_input(|s| Message::Dummy);
+                    .on_input(Message::ChangeFlatmapFlat);
                 let sky_input = widget::text_input("SKY1", sky)
-                    .on_input(|s| Message::Dummy);
+                    .on_input(Message::ChangeFlatmapSky);
                 properties_list.push(aligned_row("Flat:", flat_input));
                 properties_list.push(aligned_row("Sky:", sky_input));
             }
@@ -321,6 +323,16 @@ impl Page {
                             sky.fire = Some(Fire::default());
                         }
                     }
+                }
+            },
+            Message::ChangeFlatmapFlat(flat) => {
+                if let (ID24JsonData::SKYDEFS { flatmapping: Some(flatmaps), .. }, SkydefsIndex::Flatmapping(idx)) = (&mut json.data, self.skydefs_index) {
+                    flatmaps[idx].flat = flat;
+                }
+            },
+            Message::ChangeFlatmapSky(sky) => {
+                if let (ID24JsonData::SKYDEFS { flatmapping: Some(flatmaps), .. }, SkydefsIndex::Flatmapping(idx)) = (&mut json.data, self.skydefs_index) {
+                    flatmaps[idx].sky = sky;
                 }
             },
             _ => ()
