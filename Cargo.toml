@@ -6,19 +6,19 @@ license = "GPL-3"
 edition = "2024"
 
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 serde_repr = "0.1.20"
 env_logger = "0.11.8"
-strum = "0.27.1"
-strum_macros = "0.27.1"
-url = "2.5.4"
+strum = "0.27.2"
+strum_macros = "0.27.2"
+url = "2.5.7"
 
 [dependencies.libcosmic]
 git = "https://github.com/electricbrass/libcosmic"
-rev = "50367b9" # change to an actual release version eventually
+rev = "6439507" # change to an actual release version eventually
 default-features = false
-features = ["winit", "rfd", "tokio"]
+features = ["winit", "wayland", "rfd", "tokio"]
 
 [features]
 default = ["wgpu"]
