@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2025  Mia McMahill
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -247,7 +247,7 @@ impl cosmic::Application for EditorModel {
         (app, command)
     }
 
-    fn header_start(&self) -> Vec<Element<Self::Message>> {
+    fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
         let menu_bar = menu::bar(vec![menu::Tree::with_children(
             widget::RcElementWrapper::new(Element::from(
                 menu::root("File"),
@@ -434,7 +434,7 @@ impl cosmic::Application for EditorModel {
         Task::none()
     }
 
-    fn view(&self) -> Element<Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         let mut content = Vec::new();
         if let Some(e) = &self.error_status {
             content.push(widget::warning(e).on_close(Message::CloseError).into());
