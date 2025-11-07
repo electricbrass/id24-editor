@@ -14,3 +14,4 @@
 
 pub mod skydefs;
 pub mod gameconf;
+pub mod demoloop;

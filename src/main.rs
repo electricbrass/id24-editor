@@ -152,6 +152,7 @@ struct EditorModel {
     // TODO: should these be optional and be None when not active?
     skydefs_page: pages::skydefs::Page,
     gameconf_page: pages::gameconf::Page,
+    demoloop_page: pages::demoloop::Page,
 }
 
 #[derive(Debug, Clone)]
@@ -159,6 +160,7 @@ enum Message {
     // TODO: split each editor into its own module with its own message type
     GameconfMessage(pages::gameconf::Message),
     SkydefsMessage(pages::skydefs::Message),
+    DemoloopMessage(pages::demoloop::Message),
     InitJSON(LumpType),
     LoadJSON(Box<ID24Json>),
     CloseToast(widget::ToastId),
@@ -184,6 +186,12 @@ impl From<pages::skydefs::Message> for Message {
 impl From<pages::gameconf::Message> for Message {
     fn from(message: pages::gameconf::Message) -> Self {
         Message::GameconfMessage(message)
+    }
+}
+
+impl From<pages::demoloop::Message> for Message {
+    fn from(message: pages::demoloop::Message) -> Self {
+        Message::DemoloopMessage(message)
     }
 }
 
@@ -241,6 +249,7 @@ impl cosmic::Application for EditorModel {
             json: ID24Json::default(),
             gameconf_page: pages::gameconf::Page::default(),
             skydefs_page: pages::skydefs::Page::default(),
+            demoloop_page: pages::demoloop::Page::default(),
         };
         app.set_header_title("ID24 JSON Editor".to_owned());
         let command = app.set_window_title("ID24 JSON Editor".to_owned());
@@ -402,6 +411,7 @@ impl cosmic::Application for EditorModel {
                 match lump {
                     LumpType::GAMECONF => self.json.data = ID24JsonData::gameconf(),
                     LumpType::SKYDEFS => self.json.data = ID24JsonData::skydefs(),
+                    LumpType::DEMOLOOP => self.json.data = ID24JsonData::demoloop(),
                     _ => ()
                 }
             },
@@ -416,6 +426,9 @@ impl cosmic::Application for EditorModel {
             },
             Message::GameconfMessage(message) => {
                 return self.gameconf_page.update(&mut self.json, message).map(convert_action_message);
+            },
+            Message::DemoloopMessage(message) => {
+                return self.demoloop_page.update(&mut self.json, message).map(convert_action_message);
             },
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in &self.key_binds {
@@ -445,6 +458,9 @@ impl cosmic::Application for EditorModel {
             },
             Some(LumpType::SKYDEFS) => {
                 self.skydefs_page.view(&self.json).map(Message::SkydefsMessage)
+            },
+            Some(LumpType::DEMOLOOP) => {
+                self.demoloop_page.view(&self.json).map(Message::DemoloopMessage)
             },
             _ => {
                 widget::container(widget::text::title3("⇐ Select a lump type"))

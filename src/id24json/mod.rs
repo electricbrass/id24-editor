@@ -14,7 +14,7 @@
 
 pub mod skydefs;
 pub mod gameconf;
-mod demoloop;
+pub mod demoloop;
 mod interlevel;
 mod finale;
 mod sbardef;
@@ -172,6 +172,12 @@ impl ID24JsonData {
         Self::SKYDEFS {
             skies: None,
             flatmapping: None
+        }
+    }
+
+    pub fn demoloop() -> Self {
+        Self::DEMOLOOP {
+            entries: Vec::new()
         }
     }
 
