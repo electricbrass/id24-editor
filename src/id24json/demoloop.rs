@@ -12,6 +12,8 @@
  * GNU General Public License for more details.
  */
 
+use std::fmt::{Display, Formatter};
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct Entry {
     pub primarylump: String,
@@ -22,16 +24,46 @@ pub struct Entry {
     pub outrowwipe: OutRowWipe
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, strum_macros::VariantArray, Clone, PartialEq, Debug)]
 #[repr(u8)]
 pub enum DemoType {
     ArtScreen = 0,
     DemoLump = 1
 }
 
-#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, PartialEq, Debug)]
+#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, strum_macros::VariantArray, Clone, PartialEq, Debug)]
 #[repr(u8)]
 pub enum OutRowWipe {
     Immediate = 0,
     ScreenMelt = 1
+}
+
+impl Default for Entry {
+    fn default() -> Self {
+        Self {
+            primarylump: "DEMO1".to_owned(),
+            secondarylump: "D_RUNNIN".to_owned(),
+            duration: 3.0,
+            demo_type: DemoType::DemoLump,
+            outrowwipe: OutRowWipe::ScreenMelt,
+        }
+    }
+}
+
+impl Display for DemoType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            DemoType::ArtScreen => "Art Screen",
+            DemoType::DemoLump  => "Demo Lump",
+        })
+    }
+}
+
+impl Display for OutRowWipe {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            OutRowWipe::Immediate   => "Immediate",
+            OutRowWipe::ScreenMelt  => "Screen Melt",
+        })
+    }
 }
