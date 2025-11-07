@@ -20,6 +20,9 @@ rev = "6439507" # change to an actual release version eventually
 default-features = false
 features = ["winit", "wayland", "rfd", "tokio"]
 
+[target.'cfg(target_os = "linux")'.dependencies.libcosmic]
+features = ["wayland"]
+
 [features]
 default = ["wgpu"]
 debug = ["libcosmic/debug"]
