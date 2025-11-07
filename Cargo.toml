@@ -14,14 +14,17 @@ strum = "0.27.2"
 strum_macros = "0.27.2"
 url = "2.5.7"
 
-[dependencies.libcosmic]
+[target.'cfg(not(target_os = "linux"))'.dependencies.libcosmic]
+git = "https://github.com/electricbrass/libcosmic"
+rev = "6439507" # change to an actual release version eventually
+default-features = false
+features = ["winit", "rfd", "tokio"]
+
+[target.'cfg(target_os = "linux")'.dependencies.libcosmic]
 git = "https://github.com/electricbrass/libcosmic"
 rev = "6439507" # change to an actual release version eventually
 default-features = false
 features = ["winit", "wayland", "rfd", "tokio"]
-
-[target.'cfg(target_os = "linux")'.dependencies.libcosmic]
-features = ["wayland"]
 
 [features]
 default = ["wgpu"]
